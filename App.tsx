@@ -16,11 +16,165 @@ const BANK_INFO = {
 // 2. PIN UNTUK MASUK HALAMAN ADMIN
 const ADMIN_PIN = "123456"; 
 
+// --- GOOGLE APPS SCRIPT CODE TEMPLATE ---
+const GOOGLE_SCRIPT_CODE = `
+// --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
+// Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("MemberData");
+    if (!sheet) {
+      sheet = ss.insertSheet("MemberData");
+      sheet.appendRow(["Timestamp", "WhatsApp", "Status", "PaymentAmount", "PaymentCode", "PaymentMethod", "FullName", "Nickname", "BirthYear", "BirthDate", "FatherName", "MotherName", "AddressKK", "AddressDomicile", "ShirtSize"]);
+    }
+    
+    var params = JSON.parse(e.postData.contents);
+    var action = params.action;
+    var result = {};
+    
+    if (action == "get_all") {
+      result = getAllMembers(sheet);
+    } else if (action == "check_status") {
+      result = handleCheckStatus(sheet, params);
+    } else if (action == "confirm_payment") {
+      result = handleConfirmPayment(sheet, params);
+    } else if (action == "admin_approve") {
+      result = handleAdminApprove(sheet, params);
+    } else if (action == "submit_registration") {
+      result = handleSubmitRegistration(sheet, params);
+    } else if (action == "wipe_all") {
+      sheet.clearContents();
+      sheet.appendRow(["Timestamp", "WhatsApp", "Status", "PaymentAmount", "PaymentCode", "PaymentMethod", "FullName", "Nickname", "BirthYear", "BirthDate", "FatherName", "MotherName", "AddressKK", "AddressDomicile", "ShirtSize"]);
+      result = {success: true};
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (e) {
+    return ContentService.createTextOutput(JSON.stringify({error: e.toString()})).setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getAllMembers(sheet) {
+  var data = sheet.getDataRange().getValues();
+  var members = [];
+  // Skip header
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (row[1]) {
+      members.push(rowToMember(row));
+    }
+  }
+  return members;
+}
+
+function handleCheckStatus(sheet, params) {
+  var wa = params.whatsapp;
+  var rowIndex = findRowIndex(sheet, wa);
+  
+  if (rowIndex == -1) {
+    var randomCode = Math.floor(Math.random() * 90 + 10);
+    var amount = 200000 + randomCode;
+    var newRow = [new Date(), wa, "NEW", amount, randomCode, "", "", "", "", "", "", "", "", "", ""];
+    sheet.appendRow(newRow);
+    return rowToMember(newRow);
+  } else {
+    var row = sheet.getRange(rowIndex, 1, 1, 15).getValues()[0];
+    return rowToMember(row);
+  }
+}
+
+function handleConfirmPayment(sheet, params) {
+  var wa = params.whatsapp;
+  var method = params.method;
+  var rowIndex = findRowIndex(sheet, wa);
+  if (rowIndex == -1) throw "Member not found";
+  
+  sheet.getRange(rowIndex, 3).setValue("WAITING_APPROVAL");
+  sheet.getRange(rowIndex, 6).setValue(method);
+  
+  if (method === "CASH") {
+     sheet.getRange(rowIndex, 4).setValue(200000);
+  }
+  
+  var row = sheet.getRange(rowIndex, 1, 1, 15).getValues()[0];
+  return rowToMember(row);
+}
+
+function handleAdminApprove(sheet, params) {
+  var wa = params.whatsapp;
+  var rowIndex = findRowIndex(sheet, wa);
+  if (rowIndex == -1) throw "Member not found";
+  
+  sheet.getRange(rowIndex, 3).setValue("APPROVED");
+  var row = sheet.getRange(rowIndex, 1, 1, 15).getValues()[0];
+  return rowToMember(row);
+}
+
+function handleSubmitRegistration(sheet, params) {
+  var wa = params.whatsapp;
+  var data = params.data;
+  var rowIndex = findRowIndex(sheet, wa);
+  if (rowIndex == -1) throw "Member not found";
+  
+  var range = sheet.getRange(rowIndex, 1, 1, 15);
+  sheet.getRange(rowIndex, 3).setValue("REGISTERED");
+  
+  if(data.fullName) sheet.getRange(rowIndex, 7).setValue(data.fullName);
+  if(data.nickname) sheet.getRange(rowIndex, 8).setValue(data.nickname);
+  if(data.birthYear) sheet.getRange(rowIndex, 9).setValue(data.birthYear);
+  if(data.birthDate) sheet.getRange(rowIndex, 10).setValue(data.birthDate);
+  if(data.fatherName) sheet.getRange(rowIndex, 11).setValue(data.fatherName);
+  if(data.motherName) sheet.getRange(rowIndex, 12).setValue(data.motherName);
+  if(data.addressKK) sheet.getRange(rowIndex, 13).setValue(data.addressKK);
+  if(data.addressDomicile) sheet.getRange(rowIndex, 14).setValue(data.addressDomicile);
+  if(data.shirtSize) sheet.getRange(rowIndex, 15).setValue(data.shirtSize);
+  
+  var row = range.getValues()[0];
+  return rowToMember(row);
+}
+
+function findRowIndex(sheet, wa) {
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][1]) == String(wa)) {
+      return i + 1;
+    }
+  }
+  return -1;
+}
+
+function rowToMember(row) {
+  return {
+    whatsapp: String(row[1]),
+    status: row[2],
+    paymentAmount: row[3],
+    paymentCode: row[4],
+    paymentMethod: row[5],
+    fullName: row[6],
+    nickname: row[7],
+    birthYear: row[8],
+    birthDate: row[9],
+    fatherName: row[10],
+    motherName: row[11],
+    addressKK: row[12],
+    addressDomicile: row[13],
+    shirtSize: row[14]
+  };
+}
+`;
+
 // --- UTILS ---
 
-// Standarisasi nomor WA agar tidak double data (selalu 08xxx)
 const sanitizePhoneNumber = (phone: string): string => {
-  let clean = phone.replace(/\D/g, ''); // Hapus non-angka
+  let clean = phone.replace(/\D/g, ''); 
   if (clean.startsWith('62')) {
     clean = '0' + clean.substring(2);
   } else if (clean.startsWith('8')) {
@@ -101,6 +255,69 @@ const AdminLoginModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
   );
 };
 
+const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+  if (!isOpen) return null;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(GOOGLE_SCRIPT_CODE);
+    alert("Kode berhasil disalin!");
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
+        <div className="p-6 border-b flex justify-between items-center">
+          <h3 className="text-lg font-bold text-slate-800">Panduan Integrasi Google Sheet</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">&times;</button>
+        </div>
+        
+        <div className="p-6 overflow-y-auto space-y-6 text-sm text-slate-600">
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <h4 className="font-bold text-blue-800 mb-2">Langkah 1: Siapkan Google Sheet</h4>
+            <ol className="list-decimal ml-4 space-y-1">
+              <li>Buka Google Drive dan buat <strong>Google Spreadsheet</strong> baru.</li>
+              <li>Beri nama spreadsheet (misal: "Database Pushbike").</li>
+              <li>Klik menu <strong>Extensions (Ekstensi)</strong> &gt; <strong>Apps Script</strong>.</li>
+            </ol>
+          </div>
+
+          <div className="bg-orange-50 p-4 rounded-lg border border-orange-100">
+            <h4 className="font-bold text-orange-800 mb-2">Langkah 2: Pasang Kode Backend</h4>
+            <p className="mb-2">Hapus semua kode yang ada di editor Apps Script, lalu copy-paste kode di bawah ini:</p>
+            <div className="relative">
+              <pre className="bg-slate-800 text-slate-200 p-4 rounded-md overflow-x-auto text-xs h-40">
+                {GOOGLE_SCRIPT_CODE}
+              </pre>
+              <button onClick={handleCopy} className="absolute top-2 right-2 bg-white text-slate-800 px-3 py-1 rounded text-xs font-bold shadow hover:bg-slate-100">
+                Copy Kode
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+            <h4 className="font-bold text-green-800 mb-2">Langkah 3: Deploy & Hubungkan</h4>
+            <ol className="list-decimal ml-4 space-y-1">
+              <li>Klik tombol <strong>Deploy</strong> (kanan atas) &gt; <strong>New Deployment</strong>.</li>
+              <li>Pilih type: <strong>Web app</strong>.</li>
+              <li>Description: "v1".</li>
+              <li>Execute as: <strong>Me</strong> (email anda).</li>
+              <li>Who has access: <strong>Anyone</strong> (PENTING!).</li>
+              <li>Klik <strong>Deploy</strong>, lalu salin <strong>Web App URL</strong>.</li>
+              <li>Paste URL tersebut ke kolom konfigurasi di Dashboard Admin aplikasi ini.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div className="p-4 border-t bg-slate-50 flex justify-end">
+          <button onClick={onClose} className="bg-slate-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-slate-800">
+            Saya Mengerti
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const [members, setMembers] = useState<MemberData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,6 +329,7 @@ const AdminDashboard = () => {
   const [urlInput, setUrlInput] = useState(SheetService.getScriptUrl());
   const [wiping, setWiping] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   const loadData = async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -201,6 +419,8 @@ const AdminDashboard = () => {
 
   return (
     <div className="animate-fade-in p-4 space-y-6">
+      <IntegrationGuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
+
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-slate-800">Admin Dashboard</h2>
         <button onClick={() => loadData(true)} className="text-sm text-orange-600 hover:underline">Refresh Data</button>
@@ -279,9 +499,10 @@ const AdminDashboard = () => {
       <div className="border-t border-slate-200 pt-8 mt-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-bold text-slate-800">Pengaturan Integrasi</h3>
-          <span className={`text-xs px-2 py-1 rounded font-medium ${configUrl ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-            {configUrl ? 'Mode Live' : 'Mode Demo'}
-          </span>
+          <button onClick={() => setShowGuide(true)} className="text-xs flex items-center gap-1 text-orange-600 font-medium hover:underline">
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+             Panduan & Script
+          </button>
         </div>
         
         {isEditingConfig ? (
@@ -303,20 +524,26 @@ const AdminDashboard = () => {
           </div>
         ) : (
           <div className="bg-slate-50 p-3 rounded border border-slate-100 space-y-3">
-            <div className="text-sm text-slate-500 break-all">
-               {configUrl ? configUrl : "Menggunakan database lokal (simulasi)."}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => { setUrlInput(configUrl); setIsEditingConfig(true); }} className="text-orange-600 font-medium text-xs hover:underline border border-orange-200 px-3 py-1 rounded bg-white">
-                {configUrl ? "Ubah URL" : "Hubungkan Google Sheet"}
+             <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${configUrl ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                <div className="text-sm font-medium text-slate-700">Status: {configUrl ? 'Terhubung' : 'Mode Demo (Lokal)'}</div>
+             </div>
+             {configUrl && (
+                <div className="text-xs text-slate-400 truncate font-mono bg-white p-1 border rounded">
+                   {configUrl}
+                </div>
+             )}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button onClick={() => { setUrlInput(configUrl); setIsEditingConfig(true); }} className="text-orange-600 font-medium text-xs hover:underline border border-orange-200 px-3 py-1.5 rounded bg-white hover:bg-orange-50">
+                {configUrl ? "Ubah Konfigurasi" : "Hubungkan Google Sheet"}
               </button>
               {configUrl && (
                 <>
-                  <button onClick={copyShareLink} className="text-blue-600 font-medium text-xs hover:underline border border-blue-200 px-3 py-1 rounded bg-white flex items-center gap-1">
+                  <button onClick={copyShareLink} className="text-blue-600 font-medium text-xs hover:underline border border-blue-200 px-3 py-1.5 rounded bg-white hover:bg-blue-50 flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                     Salin Link
                   </button>
-                  <button onClick={() => setShowQR(true)} className="text-slate-700 font-medium text-xs hover:bg-slate-100 border border-slate-300 px-3 py-1 rounded bg-white flex items-center gap-1">
+                  <button onClick={() => setShowQR(true)} className="bg-slate-800 text-white font-medium text-xs hover:bg-slate-900 border border-slate-800 px-3 py-1.5 rounded flex items-center gap-1 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
                     Tampilkan QR Code
                   </button>
@@ -339,17 +566,17 @@ const AdminDashboard = () => {
           <div className="bg-white p-6 rounded-xl max-w-sm w-full text-center space-y-6 animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="space-y-2">
               <h3 className="font-bold text-xl text-slate-800">Scan untuk Registrasi</h3>
-              <p className="text-sm text-slate-500">Scan QR Code ini menggunakan kamera HP untuk membuka formulir registrasi.</p>
+              <p className="text-sm text-slate-500">Member cukup scan QR ini. Aplikasi akan terbuka dan <strong>otomatis terhubung</strong> ke database Google Sheet ini.</p>
             </div>
             
             <div className="flex justify-center bg-white p-2">
-               <div className="border-4 border-slate-900 p-2 rounded-lg bg-white">
-                 <QRCode value={getShareUrl()} size={200} />
+               <div className="border-4 border-slate-900 p-2 rounded-lg bg-white shadow-lg">
+                 <QRCode value={getShareUrl()} size={220} />
                </div>
             </div>
             
             <div className="text-xs text-slate-400 bg-slate-50 p-2 rounded">
-              Otomatis terhubung ke Google Sheet
+              Tidak perlu setting manual di HP member
             </div>
 
             <button 

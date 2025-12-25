@@ -1,4 +1,4 @@
-import { MemberData, UserStatus } from '../types';
+import { MemberData, UserStatus, PaymentMethod } from '../types';
 
 const STORAGE_KEY = 'pushbike_kudus_db';
 const SCRIPT_URL_KEY = 'pushbike_script_url';
@@ -79,7 +79,7 @@ export const checkMemberStatus = async (whatsapp: string): Promise<MemberData> =
     whatsapp,
     status: UserStatus.NEW,
     paymentCode: randomDigits,
-    paymentAmount: 200000 + randomDigits
+    paymentAmount: 200000 + randomDigits // Default to transfer amount initially
   };
   
   db[whatsapp] = newMember;
@@ -87,10 +87,10 @@ export const checkMemberStatus = async (whatsapp: string): Promise<MemberData> =
   return newMember;
 };
 
-export const confirmPayment = async (whatsapp: string): Promise<MemberData> => {
+export const confirmPayment = async (whatsapp: string, method: PaymentMethod): Promise<MemberData> => {
   // 1. REAL MODE
   if (getActiveUrl()) {
-    return await callScript('confirm_payment', { whatsapp });
+    return await callScript('confirm_payment', { whatsapp, method });
   }
 
   // 2. MOCK MODE
@@ -98,6 +98,20 @@ export const confirmPayment = async (whatsapp: string): Promise<MemberData> => {
   const db = getDB();
   if (db[whatsapp]) {
     db[whatsapp].status = UserStatus.WAITING_APPROVAL;
+    db[whatsapp].paymentMethod = method;
+    
+    // If Cash, normalize amount to flat 200,000. If Transfer, ensure it keeps the unique code.
+    if (method === 'CASH') {
+        db[whatsapp].paymentAmount = 200000;
+    } else {
+        // Ensure unique code exists if switching back to transfer
+        if (db[whatsapp].paymentAmount === 200000) {
+             const randomDigits = db[whatsapp].paymentCode || Math.floor(Math.random() * 90 + 10);
+             db[whatsapp].paymentCode = randomDigits;
+             db[whatsapp].paymentAmount = 200000 + randomDigits;
+        }
+    }
+
     saveDB(db);
     return db[whatsapp];
   }

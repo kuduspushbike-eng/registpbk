@@ -15,11 +15,14 @@ export enum ShirtSize {
   XXL = 'XXL'
 }
 
+export type PaymentMethod = 'TRANSFER' | 'CASH';
+
 export interface MemberData {
   whatsapp: string;
   status: UserStatus;
-  paymentAmount: number; // 200000 + random digits
+  paymentAmount: number; // 200000 + random digits (if transfer)
   paymentCode: number;   // The random digits
+  paymentMethod?: PaymentMethod; // Track selected method
   fullName?: string;
   nickname?: string;
   birthYear?: number;

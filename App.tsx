@@ -19,6 +19,9 @@ const ADMIN_PIN = "123456";
 // 3. LINK GRUP WHATSAPP (Isi link di dalam tanda kutip, kosongkan jika belum ada)
 const WA_GROUP_LINK = "https://chat.whatsapp.com/FaZDznBOKxSGEqHEMC9FkS"; 
 
+// 4. URL LOGO APLIKASI (Ganti link gambar disini)
+const DEFAULT_APP_LOGO = "https://i.postimg.cc/50tShY2v/logoo.png";
+
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
@@ -352,13 +355,13 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
   
   // Integration Settings State
   const [configUrl, setConfigUrl] = useState(SheetService.getScriptUrl());
-  const [logoUrl, setLogoUrl] = useState(SheetService.getLogoUrl());
+  const [logoUrl, setLogoUrl] = useState(SheetService.getLogoUrl(DEFAULT_APP_LOGO));
   
   const [isEditingConfig, setIsEditingConfig] = useState(false);
   const [isEditingLogo, setIsEditingLogo] = useState(false);
   
   const [urlInput, setUrlInput] = useState(SheetService.getScriptUrl());
-  const [logoInput, setLogoInput] = useState(SheetService.getLogoUrl());
+  const [logoInput, setLogoInput] = useState(SheetService.getLogoUrl(DEFAULT_APP_LOGO));
 
   const [wiping, setWiping] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -468,6 +471,51 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
     if (!configUrl) return alert("Belum ada URL Google Sheet yang tersimpan.");
     navigator.clipboard.writeText(getShareUrl());
     alert("Link Integrasi berhasil disalin! Bagikan link ini ke member/device lain.");
+  };
+
+  const handleDownloadQR = () => {
+    const svg = document.getElementById("qr-code-container")?.querySelector("svg");
+    if (!svg) return alert("QR Code belum dimuat.");
+
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svg);
+    
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    
+    // High res for printing
+    const size = 1000;
+    canvas.width = size;
+    canvas.height = size;
+
+    img.onload = () => {
+      if (!ctx) return;
+      
+      // Fill white background (QR usually transparent in SVG)
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw image with padding
+      const padding = 50;
+      ctx.drawImage(img, padding, padding, size - (padding * 2), size - (padding * 2));
+      
+      // Add Text Label (Optional)
+      ctx.font = "bold 40px sans-serif";
+      ctx.fillStyle = "#000000";
+      ctx.textAlign = "center";
+      ctx.fillText("Pushbike Kudus", size / 2, size - 20);
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "QR_Pushbike_Kudus.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgStr)));
   };
 
   return (
@@ -688,15 +736,23 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
               </div>
             </div>
             
-            <div className="flex justify-center">
+            <div className="flex justify-center" id="qr-code-container">
                <div className="border-4 border-slate-900 p-3 rounded-xl bg-white shadow-xl">
                  <QRCode value={getShareUrl()} size={220} />
                </div>
             </div>
+
+            <button
+               onClick={handleDownloadQR}
+               className="w-full bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition flex items-center justify-center gap-2"
+            >
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+               Download Gambar QR
+            </button>
             
             <button 
               onClick={() => setShowQR(false)} 
-              className="w-full bg-slate-900 text-white font-medium py-3 rounded-xl hover:bg-slate-800 transition shadow-lg"
+              className="w-full text-sm text-slate-400 font-medium py-2 rounded-xl hover:text-slate-600 transition"
             >
               Tutup
             </button>
@@ -1013,7 +1069,9 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [appLogo, setAppLogo] = useState(SheetService.getLogoUrl());
+  
+  // Use DEFAULT_APP_LOGO as fallback if localStorage is empty
+  const [appLogo, setAppLogo] = useState(SheetService.getLogoUrl(DEFAULT_APP_LOGO));
 
   // Check URL for config
   useEffect(() => {
@@ -1037,7 +1095,7 @@ const App = () => {
   }, []);
 
   const handleConfigUpdate = () => {
-    setAppLogo(SheetService.getLogoUrl());
+    setAppLogo(SheetService.getLogoUrl(DEFAULT_APP_LOGO));
   };
 
   const handleViewChange = (newView: 'user' | 'admin') => {

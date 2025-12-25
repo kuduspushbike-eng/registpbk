@@ -31,8 +31,9 @@ export const setLogoUrl = (url: string) => {
   }
 };
 
-export const getLogoUrl = (): string => {
-  return localStorage.getItem(LOGO_URL_KEY) || DEFAULT_LOGO;
+// Updated to accept an optional default override from App.tsx
+export const getLogoUrl = (overrideDefault?: string): string => {
+  return localStorage.getItem(LOGO_URL_KEY) || overrideDefault || DEFAULT_LOGO;
 };
 
 const getActiveUrl = (): string => {

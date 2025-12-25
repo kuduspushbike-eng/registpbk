@@ -31,26 +31,53 @@ const AdminDashboard = () => {
   const [members, setMembers] = useState<MemberData[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  
+  // Integration Settings State
+  const [configUrl, setConfigUrl] = useState(SheetService.getScriptUrl());
+  const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [urlInput, setUrlInput] = useState(SheetService.getScriptUrl());
+  const [wiping, setWiping] = useState(false);
 
   const loadData = async (showLoading = true) => {
     if (showLoading) setLoading(true);
-    const data = await SheetService.getAllMembers();
-    // Sort: Waiting Approval first, then by payment code/random for generic order
-    const sorted = data.sort((a, b) => {
-      if (a.status === UserStatus.WAITING_APPROVAL && b.status !== UserStatus.WAITING_APPROVAL) return -1;
-      if (a.status !== UserStatus.WAITING_APPROVAL && b.status === UserStatus.WAITING_APPROVAL) return 1;
-      return 0;
-    });
-    setMembers(sorted);
-    setLoading(false);
+    try {
+      const data = await SheetService.getAllMembers();
+      // Sort: Waiting Approval first, then New, then Registered/Approved
+      const sorted = data.sort((a, b) => {
+        const score = (status: UserStatus) => {
+          if (status === UserStatus.WAITING_APPROVAL) return 0;
+          if (status === UserStatus.NEW) return 1;
+          return 2;
+        };
+        return score(a.status) - score(b.status);
+      });
+      setMembers(sorted);
+    } catch (e) {
+      console.error("Failed to load data", e);
+      alert("Gagal memuat data. Periksa koneksi internet atau konfigurasi URL Google Sheet.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
+  // Helper to ensure WA is displayed with leading 0
+  const formatDisplayWA = (wa: string) => {
+    let clean = wa.toString().replace(/\D/g, '');
+    if (clean.startsWith('62')) {
+      clean = '0' + clean.substring(2);
+    } else if (!clean.startsWith('0')) {
+      clean = '0' + clean;
+    }
+    return clean;
+  };
+
   const handleApprove = async (wa: string) => {
-    if(!window.confirm(`Setujui pembayaran untuk nomor ${wa}?`)) return;
+    const displayWA = formatDisplayWA(wa);
+    if(!window.confirm(`Setujui pembayaran untuk nomor ${displayWA}?`)) return;
     
     setProcessingId(wa);
     try {
@@ -65,6 +92,33 @@ const AdminDashboard = () => {
     } finally {
       setProcessingId(null);
     }
+  };
+
+  const handleWipeData = async () => {
+    const confirmationText = configUrl ? "Data di Google Sheet akan DIHAPUS PERMANEN." : "Data lokal akan dihapus.";
+    
+    if (window.confirm("PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA MEMBER?")) {
+      if (window.confirm(`KONFIRMASI TERAKHIR: ${confirmationText} Tindakan ini tidak bisa dibatalkan.`)) {
+        setWiping(true);
+        try {
+          await SheetService.wipeAllData();
+          alert("Semua data berhasil dihapus.");
+          loadData(true);
+        } catch (error) {
+          console.error(error);
+          alert("Gagal menghapus data.");
+        } finally {
+          setWiping(false);
+        }
+      }
+    }
+  };
+
+  const handleSaveConfig = () => {
+    SheetService.setScriptUrl(urlInput);
+    setConfigUrl(urlInput);
+    setIsEditingConfig(false);
+    loadData(true); // Reload to test connection
   };
 
   return (
@@ -86,7 +140,9 @@ const AdminDashboard = () => {
             <div key={m.whatsapp} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-3 transition hover:shadow-md">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="font-mono text-lg font-bold text-slate-800">{m.whatsapp}</div>
+                  <div className="font-mono text-lg font-bold text-slate-800 tracking-wide">
+                    {formatDisplayWA(m.whatsapp)}
+                  </div>
                   <div className="text-xs text-slate-500">
                     Tagihan: <span className="font-medium text-slate-700">Rp {m.paymentAmount.toLocaleString('id-ID')}</span>
                   </div>
@@ -112,17 +168,14 @@ const AdminDashboard = () => {
                       <span>{m.birthYear}</span>
                     </p>
                     <p className="flex justify-between">
-                      <span className="text-slate-500">Ortu:</span>
-                      <span className="truncate max-w-[150px]">{m.fatherName} & {m.motherName}</span>
-                    </p>
-                    <p className="flex justify-between">
                        <span className="text-slate-500">Size:</span>
                        <span className="font-bold bg-slate-200 px-1 rounded">{m.shirtSize}</span>
                     </p>
                  </div>
               )}
 
-              {m.status === UserStatus.WAITING_APPROVAL && (
+              {/* Show Approval Button for both WAITING and NEW status (manual override) */}
+              {(m.status === UserStatus.WAITING_APPROVAL || m.status === UserStatus.NEW) && (
                 <div className="pt-2 border-t mt-1">
                   <button 
                     onClick={() => handleApprove(m.whatsapp)}
@@ -130,7 +183,9 @@ const AdminDashboard = () => {
                     className={`w-full flex justify-center items-center py-2 px-4 rounded text-sm font-semibold transition-colors
                       ${processingId === m.whatsapp 
                         ? 'bg-slate-300 text-slate-500 cursor-not-allowed' 
-                        : 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
+                        : m.status === UserStatus.WAITING_APPROVAL 
+                           ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
+                           : 'bg-white border border-green-600 text-green-700 hover:bg-green-50'
                       }`}
                   >
                     {processingId === m.whatsapp ? (
@@ -141,7 +196,7 @@ const AdminDashboard = () => {
                         </svg>
                         Memproses...
                       </>
-                    ) : 'Verifikasi Pembayaran'}
+                    ) : (m.status === UserStatus.WAITING_APPROVAL ? 'Verifikasi Pembayaran' : 'Setujui Manual (Override)')}
                   </button>
                 </div>
               )}
@@ -149,6 +204,64 @@ const AdminDashboard = () => {
           ))}
         </div>
       )}
+
+      {/* DANGER ZONE: WIPE DATA */}
+      <div className="border-t border-slate-200 pt-8 mt-8 space-y-4">
+        <h3 className="font-bold text-slate-800">Manajemen Data</h3>
+        <button
+          onClick={handleWipeData}
+          disabled={wiping}
+          className="w-full border border-red-200 bg-red-50 text-red-600 py-3 rounded-lg text-sm font-semibold hover:bg-red-100 transition flex items-center justify-center gap-2"
+        >
+          {wiping ? 'Menghapus...' : (
+             <>
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+               </svg>
+               Reset / Hapus Semua Data Member
+             </>
+          )}
+        </button>
+      </div>
+
+      {/* INTEGRATION SETTINGS SECTION */}
+      <div className="border-t border-slate-200 pt-8 mt-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-slate-800">Pengaturan Integrasi</h3>
+          <span className={`text-xs px-2 py-1 rounded font-medium ${configUrl ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+            {configUrl ? 'Mode Live (Google Sheet)' : 'Mode Demo (Offline)'}
+          </span>
+        </div>
+        
+        {isEditingConfig ? (
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+             <div className="text-xs text-slate-600">
+               Paste URL Web App dari Google Apps Script Deployment di bawah ini. Pastikan akses diatur ke <strong>'Anyone'</strong>.
+             </div>
+             <input 
+              type="text" 
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              placeholder="https://script.google.com/macros/s/..."
+              className="w-full text-sm p-2 border rounded focus:ring-1 focus:ring-orange-500 outline-none"
+             />
+             <div className="flex gap-2 justify-end">
+               <button onClick={() => setIsEditingConfig(false)} className="text-slate-600 text-sm px-3 py-1 hover:bg-slate-200 rounded">Batal</button>
+               <button onClick={handleSaveConfig} className="bg-orange-600 text-white text-sm px-3 py-1 rounded hover:bg-orange-700">Simpan Koneksi</button>
+             </div>
+          </div>
+        ) : (
+          <div className="text-sm text-slate-500 flex justify-between items-center bg-slate-50 p-3 rounded border border-slate-100">
+            <span className="truncate max-w-[250px]">
+              {configUrl ? configUrl : "Menggunakan database lokal (simulasi)."}
+            </span>
+            <button onClick={() => { setUrlInput(configUrl); setIsEditingConfig(true); }} className="text-orange-600 font-medium text-xs hover:underline">
+              {configUrl ? "Ubah URL" : "Hubungkan Google Sheet"}
+            </button>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 };
@@ -428,20 +541,35 @@ export default function App() {
   const [member, setMember] = useState<MemberData | null>(null);
 
   const handleLogin = async (wa: string) => {
-    const data = await SheetService.checkMemberStatus(wa);
-    setMember(data);
+    try {
+      const data = await SheetService.checkMemberStatus(wa);
+      setMember(data);
+    } catch (error) {
+      console.error(error);
+      alert("Terjadi kesalahan koneksi. Pastikan URL Google Sheet benar atau internet lancar.");
+    }
   };
 
   const handlePaymentConfirm = async () => {
     if (!member) return;
-    const updated = await SheetService.confirmPayment(member.whatsapp);
-    setMember(updated);
+    try {
+      const updated = await SheetService.confirmPayment(member.whatsapp);
+      setMember(updated);
+    } catch (error) {
+      console.error(error);
+      alert("Gagal melakukan konfirmasi. Silakan coba lagi.");
+    }
   };
 
   const handleSubmitForm = async (data: Partial<MemberData>) => {
     if (!member) return;
-    const updated = await SheetService.submitRegistration(member.whatsapp, data);
-    setMember(updated);
+    try {
+      const updated = await SheetService.submitRegistration(member.whatsapp, data);
+      setMember(updated);
+    } catch (error) {
+      console.error(error);
+      alert("Gagal menyimpan data. Silakan coba lagi.");
+    }
   };
 
   // Effect to sync member state if needed (optional for simple flow)

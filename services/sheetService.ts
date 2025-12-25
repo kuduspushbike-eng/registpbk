@@ -1,30 +1,79 @@
 import { MemberData, UserStatus } from '../types';
 
 const STORAGE_KEY = 'pushbike_kudus_db';
+const SCRIPT_URL_KEY = 'pushbike_script_url';
 
-// Simulate network delay
+// Simulate network delay for mock mode
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Helper to get DB
+// --- CONFIGURATION HELPERS ---
+
+export const setScriptUrl = (url: string) => {
+  if (url && url.trim().length > 0) {
+    localStorage.setItem(SCRIPT_URL_KEY, url.trim());
+  } else {
+    localStorage.removeItem(SCRIPT_URL_KEY);
+  }
+};
+
+export const getScriptUrl = (): string => {
+  return localStorage.getItem(SCRIPT_URL_KEY) || "";
+};
+
+const getActiveUrl = (): string => {
+  return getScriptUrl();
+};
+
+// --- MOCK DATABASE HELPERS (LOCAL STORAGE) ---
 const getDB = (): Record<string, MemberData> => {
   const data = localStorage.getItem(STORAGE_KEY);
   return data ? JSON.parse(data) : {};
 };
 
-// Helper to save DB
 const saveDB = (db: Record<string, MemberData>) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
 };
 
+// --- API HELPER FOR GOOGLE SHEETS ---
+const callScript = async (action: string, payload: any = {}) => {
+  const url = getActiveUrl();
+  if (!url) throw new Error("Script URL not configured");
+  
+  // We use standard fetch. Apps Script 'Anyone' access handles CORS for POST requests.
+  // Note: ensure the GAS deployment is set to 'Anyone' access.
+  const response = await fetch(url, {
+    method: "POST",
+    body: JSON.stringify({ action, ...payload })
+  });
+  
+  const json = await response.json();
+  if (json.error) throw new Error(json.error);
+  return json;
+};
+
+// ============================================================================
+// SERVICE METHODS
+// ============================================================================
+
 export const checkMemberStatus = async (whatsapp: string): Promise<MemberData> => {
-  await delay(600); // Simulate API call
+  // 1. REAL MODE
+  if (getActiveUrl()) {
+    try {
+      return await callScript('check_status', { whatsapp });
+    } catch (e) {
+      console.warn("API Error, falling back to mock check for safety", e);
+      throw e;
+    }
+  }
+
+  // 2. MOCK MODE
+  await delay(600);
   const db = getDB();
   
   if (db[whatsapp]) {
     return db[whatsapp];
   }
 
-  // Create new if not exists
   const randomDigits = Math.floor(Math.random() * 90 + 10); // 10-99
   const newMember: MemberData = {
     whatsapp,
@@ -39,6 +88,12 @@ export const checkMemberStatus = async (whatsapp: string): Promise<MemberData> =
 };
 
 export const confirmPayment = async (whatsapp: string): Promise<MemberData> => {
+  // 1. REAL MODE
+  if (getActiveUrl()) {
+    return await callScript('confirm_payment', { whatsapp });
+  }
+
+  // 2. MOCK MODE
   await delay(800);
   const db = getDB();
   if (db[whatsapp]) {
@@ -49,8 +104,15 @@ export const confirmPayment = async (whatsapp: string): Promise<MemberData> => {
   throw new Error("Member not found");
 };
 
-// This function simulates the Admin approving the payment manually on the sheet
 export const adminApproveMember = async (whatsapp: string): Promise<MemberData> => {
+  // 1. REAL MODE
+  if (getActiveUrl()) {
+    await callScript('admin_approve', { whatsapp });
+    // Fetch updated data to return consistent object
+    return { ...(await checkMemberStatus(whatsapp)), status: UserStatus.APPROVED };
+  }
+
+  // 2. MOCK MODE
   await delay(400);
   const db = getDB();
   if (db[whatsapp]) {
@@ -62,6 +124,12 @@ export const adminApproveMember = async (whatsapp: string): Promise<MemberData> 
 };
 
 export const submitRegistration = async (whatsapp: string, data: Partial<MemberData>): Promise<MemberData> => {
+  // 1. REAL MODE
+  if (getActiveUrl()) {
+    return await callScript('submit_registration', { whatsapp, data });
+  }
+
+  // 2. MOCK MODE
   await delay(1000);
   const db = getDB();
   if (db[whatsapp]) {
@@ -77,8 +145,25 @@ export const submitRegistration = async (whatsapp: string, data: Partial<MemberD
 };
 
 export const getAllMembers = async (): Promise<MemberData[]> => {
+  // 1. REAL MODE
+  if (getActiveUrl()) {
+    return await callScript('get_all');
+  }
+
+  // 2. MOCK MODE
   await delay(500);
   const db = getDB();
-  // Sort by latest added (conceptually, though keys are random/wa, we just return list)
   return Object.values(db);
+};
+
+export const wipeAllData = async (): Promise<void> => {
+  // 1. REAL MODE
+  if (getActiveUrl()) {
+    await callScript('wipe_all');
+    return;
+  }
+
+  // 2. MOCK MODE
+  await delay(1000);
+  localStorage.removeItem(STORAGE_KEY);
 };

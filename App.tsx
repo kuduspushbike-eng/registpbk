@@ -4,6 +4,18 @@ import * as SheetService from './services/sheetService';
 import GeminiChat from './components/GeminiChat';
 import QRCode from 'react-qr-code';
 
+// --- KONFIGURASI APLIKASI ---
+
+// 1. UBAH DATA REKENING BANK DISINI
+const BANK_INFO = {
+  bankName: "Bank BCA",
+  accountNumber: "123 456 7890",
+  accountHolder: "a.n Pushbike Kudus"
+};
+
+// 2. PIN UNTUK MASUK HALAMAN ADMIN
+const ADMIN_PIN = "123456"; 
+
 // --- UTILS ---
 
 // Standarisasi nomor WA agar tidak double data (selalu 08xxx)
@@ -40,6 +52,54 @@ const Header = ({ onViewChange, currentView }: { onViewChange: (view: 'user' | '
     </div>
   </header>
 );
+
+const AdminLoginModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) => {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pin === ADMIN_PIN) {
+      onSuccess();
+      setPin('');
+      setError(false);
+    } else {
+      setError(true);
+      setPin('');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl max-w-xs w-full p-6 animate-fade-in" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-slate-800 mb-4 text-center">Keamanan Admin</h3>
+        <p className="text-sm text-slate-500 mb-4 text-center">Masukkan PIN untuk mengakses dashboard.</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="password"
+            autoFocus
+            className={`w-full text-center text-2xl tracking-widest p-2 border rounded-lg focus:outline-none focus:ring-2 ${error ? 'border-red-500 ring-red-200' : 'border-slate-300 focus:ring-orange-500'}`}
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder="••••••"
+            maxLength={6}
+          />
+          {error && <p className="text-xs text-red-500 text-center font-bold">PIN Salah!</p>}
+          
+          <button type="submit" className="w-full bg-slate-900 text-white py-2 rounded-lg font-medium hover:bg-slate-800">
+            Masuk
+          </button>
+        </form>
+        <button onClick={onClose} className="w-full mt-2 text-xs text-slate-400 hover:text-slate-600">
+          Batal
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const [members, setMembers] = useState<MemberData[]>([]);
@@ -370,9 +430,9 @@ const StepPayment = ({ member, onConfirm }: { member: MemberData, onConfirm: () 
         </div>
         
         <div className="bg-white p-3 rounded-lg border text-sm text-slate-600">
-          <p className="font-semibold">Bank BCA</p>
-          <p>123 456 7890</p>
-          <p>a.n Pushbike Kudus</p>
+          <p className="font-semibold">{BANK_INFO.bankName}</p>
+          <p className="text-lg tracking-wide">{BANK_INFO.accountNumber}</p>
+          <p>{BANK_INFO.accountHolder}</p>
         </div>
       </div>
 
@@ -598,6 +658,7 @@ const StepSuccess = () => (
 export default function App() {
   const [viewMode, setViewMode] = useState<'user' | 'admin'>('user');
   const [member, setMember] = useState<MemberData | null>(null);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   // Auto-config logic: Check URL for ?config=SCRIPT_URL
   useEffect(() => {
@@ -649,10 +710,28 @@ export default function App() {
     }
   };
 
+  const handleChangeView = (view: 'user' | 'admin') => {
+    if (view === 'admin') {
+      setShowAdminLogin(true);
+    } else {
+      setViewMode('user');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20">
-      <Header currentView={viewMode} onViewChange={setViewMode} />
+      <Header currentView={viewMode} onViewChange={handleChangeView} />
       
+      {/* Admin Login Modal */}
+      <AdminLoginModal 
+        isOpen={showAdminLogin} 
+        onClose={() => setShowAdminLogin(false)} 
+        onSuccess={() => {
+          setViewMode('admin');
+          setShowAdminLogin(false);
+        }}
+      />
+
       <main className="max-w-md mx-auto p-4 mt-6">
         {viewMode === 'admin' ? (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100">

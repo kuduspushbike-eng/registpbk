@@ -17,7 +17,7 @@ const BANK_INFO = {
 const ADMIN_PIN = "123456"; 
 
 // 3. LINK GRUP WHATSAPP (Isi link di dalam tanda kutip, kosongkan jika belum ada)
-const WA_GROUP_LINK = "https://chat.whatsapp.com/FaZDznBOKxSGEqHEMC9FkS"; // Contoh: "https://chat.whatsapp.com/ABCDE12345"
+const WA_GROUP_LINK = "https://chat.whatsapp.com/FaZDznBOKxSGEqHEMC9FkS"; 
 
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
@@ -195,11 +195,11 @@ const sanitizePhoneNumber = (phone: string): string => {
 
 // --- Sub-components ---
 
-const Header = ({ onViewChange, currentView }: { onViewChange: (view: 'user' | 'admin') => void, currentView: 'user' | 'admin' }) => (
+const Header = ({ onViewChange, currentView, logoUrl }: { onViewChange: (view: 'user' | 'admin') => void, currentView: 'user' | 'admin', logoUrl: string }) => (
   <header className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-20 shadow-sm">
     <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
-      <div className="flex items-center gap-2 cursor-pointer transition hover:opacity-80" onClick={() => onViewChange('user')}>
-        <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md">PK</div>
+      <div className="flex items-center gap-3 cursor-pointer transition hover:opacity-80" onClick={() => onViewChange('user')}>
+        <img src={logoUrl} alt="Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
         <h1 className="font-bold text-slate-800 text-lg tracking-tight">Pushbike Kudus</h1>
       </div>
       <div className="flex items-center gap-2">
@@ -217,10 +217,10 @@ const Header = ({ onViewChange, currentView }: { onViewChange: (view: 'user' | '
   </header>
 );
 
-const Footer = () => (
+const Footer = ({ logoUrl }: { logoUrl: string }) => (
   <footer className="py-8 text-center text-slate-400">
-    <div className="max-w-md mx-auto px-4 flex flex-col items-center gap-2">
-      <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 font-bold text-[10px] mb-1 opacity-50">PK</div>
+    <div className="max-w-md mx-auto px-4 flex flex-col items-center gap-3">
+      <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain opacity-50 grayscale" />
       <p className="text-xs font-medium text-slate-500">
         &copy; {new Date().getFullYear()} Pushbike Kudus. All rights reserved.
       </p>
@@ -345,15 +345,21 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
   );
 };
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
   const [members, setMembers] = useState<MemberData[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   
   // Integration Settings State
   const [configUrl, setConfigUrl] = useState(SheetService.getScriptUrl());
+  const [logoUrl, setLogoUrl] = useState(SheetService.getLogoUrl());
+  
   const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [isEditingLogo, setIsEditingLogo] = useState(false);
+  
   const [urlInput, setUrlInput] = useState(SheetService.getScriptUrl());
+  const [logoInput, setLogoInput] = useState(SheetService.getLogoUrl());
+
   const [wiping, setWiping] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -431,6 +437,13 @@ const AdminDashboard = () => {
     setConfigUrl(urlInput);
     setIsEditingConfig(false);
     loadData(true); 
+  };
+
+  const handleSaveLogo = () => {
+    SheetService.setLogoUrl(logoInput);
+    setLogoUrl(logoInput);
+    setIsEditingLogo(false);
+    onConfigUpdate(); // Update parent state
   };
 
   // Logic untuk membuat URL Share yang mengandung Config
@@ -536,8 +549,49 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* INTEGRATION SETTINGS SECTION */}
+      {/* APPEARANCE SETTINGS SECTION */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mt-8 shadow-sm">
+        <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+          <h3 className="font-bold text-slate-700 text-sm">Pengaturan Tampilan</h3>
+        </div>
+        
+        <div className="p-4">
+          {isEditingLogo ? (
+            <div className="space-y-3">
+               <div className="text-xs text-slate-600">
+                 Masukkan URL gambar/logo (Direct Link). Bisa gunakan link dari image hosting atau Google Drive (direct link).
+               </div>
+               <input 
+                type="text" 
+                value={logoInput}
+                onChange={(e) => setLogoInput(e.target.value)}
+                placeholder="https://example.com/logo.png"
+                className="w-full text-sm p-2 border rounded focus:ring-2 focus:ring-orange-500 outline-none transition"
+               />
+               <div className="flex gap-2 justify-end">
+                 <button onClick={() => setIsEditingLogo(false)} className="text-slate-600 text-sm px-4 py-2 hover:bg-slate-100 rounded-lg">Batal</button>
+                 <button onClick={handleSaveLogo} className="bg-orange-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-orange-700 shadow">Simpan Logo</button>
+               </div>
+            </div>
+          ) : (
+             <div className="flex items-center gap-4 p-2">
+                 <div className="w-12 h-12 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-1">
+                    <img src={logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                 </div>
+                 <div className="flex-1 overflow-hidden">
+                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Logo Aplikasi</div>
+                    <div className="text-sm text-slate-800 truncate">{logoUrl}</div>
+                 </div>
+                 <button onClick={() => { setLogoInput(logoUrl); setIsEditingLogo(true); }} className="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
+                    Ganti
+                 </button>
+             </div>
+          )}
+        </div>
+      </div>
+
+      {/* INTEGRATION SETTINGS SECTION */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mt-6 shadow-sm">
         <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
           <h3 className="font-bold text-slate-700 text-sm">Pengaturan Database</h3>
           <button onClick={() => setShowGuide(true)} className="text-xs flex items-center gap-1 text-orange-600 font-medium hover:underline">
@@ -646,7 +700,7 @@ const AdminDashboard = () => {
   );
 };
 
-const StepLogin = ({ onLogin }: { onLogin: (wa: string, nickname: string) => void }) => {
+const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: string) => void, logoUrl: string }) => {
   const [phone, setPhone] = useState('');
   const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(false);
@@ -667,9 +721,7 @@ const StepLogin = ({ onLogin }: { onLogin: (wa: string, nickname: string) => voi
   return (
     <div className="animate-fade-in space-y-8 py-4">
       <div className="text-center space-y-3">
-        <div className="inline-block p-3 bg-orange-100 rounded-full mb-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
-        </div>
+        <img src={logoUrl} alt="Logo" className="w-24 h-24 object-contain mx-auto mb-4 drop-shadow-md" />
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Selamat Datang</h2>
         <p className="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">
           Silakan lengkapi data awal untuk memulai proses registrasi ulang member Pushbike Kudus.
@@ -714,346 +766,235 @@ const StepLogin = ({ onLogin }: { onLogin: (wa: string, nickname: string) => voi
 };
 
 const StepPayment = ({ member, onConfirm }: { member: MemberData, onConfirm: (method: PaymentMethod) => void }) => {
-  const [loading, setLoading] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>('TRANSFER');
-
-  const handleConfirm = async () => {
-    setLoading(true);
-    await onConfirm(method);
-    setLoading(false);
-  };
-
-  const transferAmount = member.paymentAmount > 200500 ? member.paymentAmount : (200000 + member.paymentCode);
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="text-center">
-         <h3 className="text-lg font-bold text-slate-800">Pilih Metode Pembayaran</h3>
-         <p className="text-sm text-slate-500">Silakan pilih cara pembayaran registrasi.</p>
-      </div>
-      
-      <div className="flex bg-slate-100 p-1.5 rounded-xl">
-        <button 
-          onClick={() => setMethod('TRANSFER')}
-          className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${method === 'TRANSFER' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Transfer Bank
-        </button>
-        <button 
-          onClick={() => setMethod('CASH')}
-          className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${method === 'CASH' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Tunai (Cash)
-        </button>
-      </div>
+       <div className="text-center">
+         <h2 className="text-xl font-bold text-slate-800">Pembayaran Registrasi</h2>
+         <p className="text-slate-500 text-sm">Silakan pilih metode pembayaran.</p>
+       </div>
 
-      <div className={`relative overflow-hidden ${method === 'TRANSFER' ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200' : 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200'} border rounded-2xl p-6 text-center space-y-4 transition-all shadow-sm`}>
-        
-        {method === 'TRANSFER' ? (
-           <>
-             <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg inline-block">
-                <p className="text-xs font-bold text-orange-700 uppercase tracking-wide">Total Transfer</p>
-             </div>
-             <div className="py-2">
-                <div className="text-4xl font-mono font-bold text-slate-800 tracking-tighter">
-                  <span className="text-xl align-top text-slate-500 font-sans mr-1">Rp</span>
-                  {transferAmount.toLocaleString('id-ID')}
-                </div>
-                <div className="inline-block mt-2 px-2 py-1 bg-orange-200/50 text-orange-800 text-[10px] font-bold rounded">
-                  Kode Unik: {member.paymentCode}
-                </div>
-             </div>
-             <p className="text-xs text-orange-800/80 leading-relaxed px-4">
-               Mohon transfer <strong>sesuai nominal persis</strong> (hingga 3 digit terakhir) agar sistem dapat memverifikasi otomatis.
-             </p>
-             <div className="bg-white p-4 rounded-xl border border-orange-100 text-sm text-slate-600 shadow-sm">
-               <p className="font-bold text-slate-800 mb-1">{BANK_INFO.bankName}</p>
-               <p className="text-xl font-mono tracking-wider text-slate-800 select-all bg-slate-50 py-2 rounded mb-1">{BANK_INFO.accountNumber}</p>
-               <p className="text-xs text-slate-400">{BANK_INFO.accountHolder}</p>
-             </div>
-           </>
-        ) : (
-           <>
-             <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg inline-block">
-                <p className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Total Tagihan</p>
-             </div>
-             <div className="py-2">
-                <div className="text-4xl font-mono font-bold text-slate-800 tracking-tighter">
-                  <span className="text-xl align-top text-slate-500 font-sans mr-1">Rp</span>
-                  200.000
-                </div>
-                <div className="inline-block mt-2 px-2 py-1 bg-emerald-200/50 text-emerald-800 text-[10px] font-bold rounded">
-                  Tanpa Kode Unik
-                </div>
-             </div>
-             <div className="bg-white p-5 rounded-xl border border-emerald-100 text-sm text-slate-600 flex items-start gap-3 text-left shadow-sm">
-               <div className="bg-emerald-100 p-2 rounded-full text-emerald-600 shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-               </div>
-               <p className="text-slate-600 text-xs leading-relaxed">
-                 Wajib menyerahkan uang tunai saat <strong>Latihan/Kopdar</strong> secara langsung kepada Bendahara atau Admin yang bertugas.
-               </p>
-             </div>
-           </>
-        )}
-      </div>
+       <div className="grid grid-cols-2 gap-3">
+         <button 
+           onClick={() => setMethod('TRANSFER')}
+           className={`p-4 rounded-xl border-2 transition-all ${method === 'TRANSFER' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}
+         >
+           <div className="font-bold text-sm">Transfer Bank</div>
+         </button>
+         <button 
+           onClick={() => setMethod('CASH')}
+           className={`p-4 rounded-xl border-2 transition-all ${method === 'CASH' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}
+         >
+           <div className="font-bold text-sm">Tunai (Cash)</div>
+         </button>
+       </div>
 
-      <button
-        onClick={handleConfirm}
-        disabled={loading}
-        className={`w-full text-white font-bold py-4 rounded-xl transition-all transform active:scale-95 disabled:opacity-50 shadow-lg ${method === 'TRANSFER' ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-200' : 'bg-slate-800 hover:bg-slate-900 shadow-slate-200'}`}
-      >
-        {loading ? 'Memproses...' : (method === 'TRANSFER' ? 'Saya Sudah Transfer' : 'Saya Akan Bayar Tunai')}
-      </button>
-      
-      {method === 'TRANSFER' && (
-        <p className="text-center text-[10px] text-slate-400 uppercase tracking-wide">Tidak perlu upload bukti transfer</p>
-      )}
-    </div>
-  );
-};
-
-// Polling Component: Checks status every 5 seconds
-const StepWaitingApproval = ({ onCheckStatus }: { onCheckStatus: () => void }) => {
-  useEffect(() => {
-    // Auto refresh status every 5 seconds to see if admin approved
-    const interval = setInterval(() => {
-      onCheckStatus();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [onCheckStatus]);
-
-  return (
-    <div className="animate-fade-in text-center space-y-8 py-10">
-      <div className="relative w-24 h-24 mx-auto">
-         <div className="absolute inset-0 bg-yellow-100 rounded-full animate-ping opacity-75"></div>
-         <div className="relative w-24 h-24 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-full flex items-center justify-center text-yellow-600 shadow-inner border border-yellow-200">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+       {method === 'TRANSFER' ? (
+         <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+           <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded-lg border border-yellow-200">
+             <strong>PENTING:</strong> Transfer HARUS SESUAI nominal hingga 2 digit terakhir agar terverifikasi otomatis.
+           </div>
+           <div className="text-center py-2">
+             <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">Total Transfer</p>
+             <div className="text-3xl font-bold text-slate-900 font-mono tracking-tight">
+               Rp {member.paymentAmount.toLocaleString('id-ID')}
+             </div>
+             <p className="text-[10px] text-slate-400 mt-1">Kode unik: {member.paymentCode}</p>
+           </div>
+           <div className="border-t border-dashed pt-4 space-y-2">
+             <div className="flex justify-between text-sm">
+               <span className="text-slate-500">Bank Tujuan</span>
+               <span className="font-bold text-slate-800">{BANK_INFO.bankName}</span>
+             </div>
+             <div className="flex justify-between text-sm">
+               <span className="text-slate-500">No. Rekening</span>
+               <span className="font-bold text-slate-800 font-mono tracking-wide">{BANK_INFO.accountNumber}</span>
+             </div>
+             <div className="flex justify-between text-sm">
+               <span className="text-slate-500">Atas Nama</span>
+               <span className="font-bold text-slate-800">{BANK_INFO.accountHolder}</span>
+             </div>
+           </div>
          </div>
-      </div>
-      
-      <div className="space-y-3">
-        <h2 className="text-2xl font-bold text-slate-800">Menunggu Verifikasi</h2>
-        <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
-          Terima kasih! Tim kami sedang mengecek status pembayaran Anda. Halaman ini akan otomatis berubah setelah disetujui.
-        </p>
-      </div>
-      
-      <div className="flex justify-center">
-        <button
-          onClick={onCheckStatus}
-          className="flex items-center gap-2 text-orange-600 font-bold hover:text-orange-700 text-xs bg-orange-50 px-5 py-2.5 rounded-full border border-orange-100 hover:bg-orange-100 transition"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-          Cek Status Sekarang
-        </button>
-      </div>
+       ) : (
+         <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm text-center">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 mb-2">
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            </div>
+            <p className="text-sm text-slate-600">
+              Silakan serahkan uang tunai sebesar <strong>Rp 200.000</strong> kepada Admin/Pengurus saat latihan.
+            </p>
+            <p className="text-xs text-slate-400">
+              Admin akan melakukan verifikasi manual setelah uang diterima.
+            </p>
+         </div>
+       )}
+
+       <button
+         onClick={() => onConfirm(method)}
+         className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition shadow-lg"
+       >
+         Saya Sudah Transfer / Bayar
+       </button>
     </div>
   );
 };
 
-const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberData>) => void, initialData?: MemberData }) => {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    nickname: initialData?.nickname || '', // PRE-FILL NICKNAME
-    birthYear: '' as unknown as number,
-    birthDate: '',
-    fatherName: '',
-    motherName: '',
-    addressKK: '',
-    addressDomicile: '',
-    shirtSize: '' as ShirtSize
+const StepWaitingApproval = ({ onCheckStatus }: { onCheckStatus: () => void }) => {
+  return (
+    <div className="animate-fade-in text-center py-10 space-y-6">
+       <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto animate-pulse text-yellow-600">
+         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+       </div>
+       <div>
+         <h2 className="text-xl font-bold text-slate-800">Menunggu Verifikasi</h2>
+         <p className="text-slate-500 text-sm mt-2 max-w-xs mx-auto">
+           Mohon tunggu sebentar, Admin sedang memverifikasi pembayaran Anda.
+         </p>
+       </div>
+       <button 
+         onClick={onCheckStatus}
+         className="bg-white border border-slate-300 text-slate-700 font-medium py-2 px-6 rounded-full hover:bg-slate-50 transition"
+       >
+         Cek Status Berkala
+       </button>
+       <p className="text-xs text-slate-400 italic">
+         Jika lama belum berubah, hubungi Admin di lapangan.
+       </p>
+    </div>
+  );
+};
+
+const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberData>) => void, initialData: MemberData }) => {
+  const [formData, setFormData] = useState<Partial<MemberData>>({
+    fullName: initialData.fullName || '',
+    nickname: initialData.nickname || '',
+    birthYear: initialData.birthYear || BIRTH_YEARS[0],
+    birthDate: initialData.birthDate || '',
+    fatherName: initialData.fatherName || '',
+    motherName: initialData.motherName || '',
+    addressKK: initialData.addressKK || '',
+    addressDomicile: initialData.addressDomicile || '',
+    shirtSize: initialData.shirtSize || ShirtSize.S,
   });
-  const [sameAsKK, setSameAsKK] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleChange = (field: string, value: any) => {
-    // AUTO KAPITAL (UPPERCASE)
-    const finalValue = typeof value === 'string' ? value.toUpperCase() : value;
+  const [sameAddress, setSameAddress] = useState(false);
 
-    setFormData(prev => {
-      const newData = { ...prev, [field]: finalValue };
-      if (field === 'addressKK' && sameAsKK) {
-        newData.addressDomicile = finalValue;
-      }
-      return newData;
-    });
-  };
-
-  const handleDatePartChange = (part: 'day' | 'month', val: string) => {
-    const current = formData.birthDate || '';
-    // Check if current format matches "DD Month"
-    // If it's legacy YYYY-MM-DD, we overwrite it, which is fine for re-registration
-    const parts = current.includes('-') ? ['',''] : current.split(' ');
-    
-    let d = parts[0] || '';
-    let m = parts.slice(1).join(' ') || '';
-    
-    if (part === 'day') d = val;
-    if (part === 'month') m = val;
-    
-    handleChange('birthDate', `${d} ${m}`.trim());
-  };
-
-  const currentDay = formData.birthDate && !formData.birthDate.includes('-') ? formData.birthDate.split(' ')[0] : '';
-  const currentMonth = formData.birthDate && !formData.birthDate.includes('-') ? formData.birthDate.split(' ').slice(1).join(' ') : '';
-
-  const toggleSameAddress = () => {
-    setSameAsKK(!sameAsKK);
-    if (!sameAsKK) {
+  useEffect(() => {
+    if (sameAddress) {
       setFormData(prev => ({ ...prev, addressDomicile: prev.addressKK }));
     }
+  }, [sameAddress, formData.addressKK]);
+
+  const handleChange = (field: keyof MemberData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    await onSubmit(formData);
-    setLoading(false);
+    onSubmit(formData);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="animate-fade-in space-y-8">
-      <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 px-4 py-4 rounded-xl text-sm flex gap-3 items-start shadow-sm">
-        <div className="bg-emerald-100 p-1 rounded-full shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-        </div>
-        <div>
-          <strong>Pembayaran Terverifikasi!</strong>
-          <p className="text-emerald-600/80 text-xs mt-1">Silakan lengkapi biodata anak dengan benar untuk pencetakan ID Card.</p>
-        </div>
-      </div>
-      
-      {/* SECTION: CHILD DATA */}
-      <div className="space-y-4">
-        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Data Diri Anak</h2>
-        
-        <div>
-          <label className="text-sm font-semibold text-slate-700 block mb-1.5">Nama Lengkap Anak</label>
-          <input required type="text" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none uppercase placeholder:normal-case transition" 
-            placeholder="CONTOH: BUDI SANTOSO"
-            value={formData.fullName} onChange={e => handleChange('fullName', e.target.value)} />
-        </div>
-        
-        <div>
-          <label className="text-sm font-semibold text-slate-700 block mb-1.5">Nama Panggilan</label>
-          <input required type="text" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none uppercase placeholder:normal-case transition" 
-            placeholder="BUDI"
-            value={formData.nickname} onChange={e => handleChange('nickname', e.target.value)} />
-        </div>
+    <form onSubmit={handleSubmit} className="animate-fade-in space-y-5 pb-10">
+       <div className="text-center mb-6">
+         <h2 className="text-xl font-bold text-slate-800">Lengkapi Data Diri</h2>
+         <p className="text-slate-500 text-sm">Isi formulir berikut dengan data yang benar.</p>
+       </div>
 
-        <div>
-            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Tanggal Lahir (Tgl & Bulan)</label>
-            <div className="flex gap-2">
-              <div className="relative w-1/3">
-                <select 
-                  required 
-                  className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none appearance-none transition"
-                  value={currentDay}
-                  onChange={(e) => handleDatePartChange('day', e.target.value)}
-                >
-                  <option value="">Tgl</option>
-                  {Array.from({length: 31}, (_, i) => i + 1).map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-4 pointer-events-none text-slate-500">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                </div>
+       <div className="space-y-4">
+         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Anak</h3>
+            
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap Anak</label>
+              <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                value={formData.fullName} onChange={e => handleChange('fullName', e.target.value)} />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Panggilan</label>
+                <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase" 
+                  value={formData.nickname} onChange={e => handleChange('nickname', e.target.value.toUpperCase())} />
               </div>
-              
-              <div className="relative w-2/3">
-                <select 
-                  required 
-                  className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none appearance-none transition"
-                  value={currentMonth}
-                  onChange={(e) => handleDatePartChange('month', e.target.value)}
-                >
-                  <option value="">Bulan</option>
-                  {MONTHS.map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Tahun Lahir</label>
+                <select className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+                  value={formData.birthYear} onChange={e => handleChange('birthYear', Number(e.target.value))}>
+                  {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
-                <div className="absolute right-3 top-4 pointer-events-none text-slate-500">
-                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                </div>
               </div>
             </div>
-        </div>
-      </div>
 
-      {/* SECTION: PARENT DATA */}
-      <div className="space-y-4 pt-2">
-        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Data Orang Tua</h2>
-        <div className="grid gap-4">
-          <div>
-            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Nama Ayah</label>
-            <input required type="text" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase transition"
-              value={formData.fatherName} onChange={e => handleChange('fatherName', e.target.value)} />
-          </div>
-          <div>
-            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Nama Ibu</label>
-            <input required type="text" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase transition"
-              value={formData.motherName} onChange={e => handleChange('motherName', e.target.value)} />
-          </div>
-        </div>
-      </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Tanggal Lahir Lengkap</label>
+              <input type="date" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                value={formData.birthDate} onChange={e => handleChange('birthDate', e.target.value)} />
+            </div>
 
-      {/* SECTION: ADDRESS */}
-      <div className="space-y-4 pt-2">
-        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Alamat</h2>
-        <div>
-          <label className="text-sm font-semibold text-slate-700 block mb-1.5">Alamat Sesuai KK</label>
-          <textarea required rows={2} className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase transition"
-            value={formData.addressKK} onChange={e => handleChange('addressKK', e.target.value)} />
-        </div>
+            <div>
+               <label className="block text-xs font-semibold text-slate-600 mb-1">Ukuran Baju (Jersey)</label>
+               <div className="grid grid-cols-6 gap-1">
+                 {Object.values(ShirtSize).map(size => (
+                   <div key={size} 
+                     onClick={() => handleChange('shirtSize', size)}
+                     className={`cursor-pointer text-center py-2 text-xs font-bold rounded border transition-colors ${formData.shirtSize === size ? 'bg-orange-500 text-white border-orange-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                   >
+                     {size}
+                   </div>
+                 ))}
+               </div>
+            </div>
+         </div>
 
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="text-sm font-semibold text-slate-700">Alamat Domisili</label>
-            <button type="button" onClick={toggleSameAddress} className="text-xs flex items-center text-orange-600 font-bold bg-orange-50 px-2 py-1 rounded-md border border-orange-100 hover:bg-orange-100 transition">
-              <span className={`w-3 h-3 border rounded-sm mr-1.5 flex items-center justify-center transition ${sameAsKK ? 'bg-orange-600 border-orange-600' : 'border-slate-400 bg-white'}`}>
-                {sameAsKK && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>}
-              </span>
-              Sama dengan KK
-            </button>
-          </div>
-          <textarea required rows={2} className={`w-full p-3.5 border border-slate-200 rounded-xl outline-none uppercase transition ${sameAsKK ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500'}`}
-            value={formData.addressDomicile} onChange={e => handleChange('addressDomicile', e.target.value)} readOnly={sameAsKK} />
-        </div>
-      </div>
+         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Orang Tua</h3>
+            
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ayah</label>
+              <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                value={formData.fatherName} onChange={e => handleChange('fatherName', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ibu</label>
+              <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                value={formData.motherName} onChange={e => handleChange('motherName', e.target.value)} />
+            </div>
+         </div>
 
-      {/* SECTION: ATTRIBUTES */}
-      <div className="space-y-4 pt-2">
-        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Atribut</h2>
-        <div>
-          <label className="text-sm font-semibold text-slate-700 block mb-2">Ukuran Jersey</label>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {Object.values(ShirtSize).map(size => (
-              <button
-                key={size}
-                type="button"
-                onClick={() => handleChange('shirtSize', size)}
-                className={`px-2 py-3 rounded-lg border text-sm font-bold transition-all ${formData.shirtSize === size ? 'bg-slate-900 text-white border-slate-900 shadow-lg transform scale-105' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Alamat</h3>
+            
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat Sesuai KK</label>
+              <textarea required rows={2} className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                value={formData.addressKK} onChange={e => handleChange('addressKK', e.target.value)}></textarea>
+            </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full mt-6 bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-all transform active:scale-95 disabled:opacity-50 shadow-xl shadow-slate-200"
-      >
-        {loading ? 'Menyimpan...' : 'Simpan Data'}
-      </button>
+            <div className="flex items-center gap-2 py-1">
+               <input type="checkbox" id="sameAddr" className="rounded text-orange-500 focus:ring-orange-500" 
+                 checked={sameAddress} onChange={e => setSameAddress(e.target.checked)} />
+               <label htmlFor="sameAddr" className="text-xs text-slate-600 cursor-pointer">Alamat Domisili sama dengan KK</label>
+            </div>
+
+            {!sameAddress && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat Domisili</label>
+                <textarea required rows={2} className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.addressDomicile} onChange={e => handleChange('addressDomicile', e.target.value)}></textarea>
+              </div>
+            )}
+         </div>
+       </div>
+
+       <button
+          type="submit"
+          className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition shadow-lg shadow-slate-200"
+        >
+          Simpan Data Pendaftaran
+        </button>
     </form>
   );
 };
@@ -1064,6 +1005,7 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [appLogo, setAppLogo] = useState(SheetService.getLogoUrl());
 
   // Check URL for config
   useEffect(() => {
@@ -1075,6 +1017,10 @@ const App = () => {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
+
+  const handleConfigUpdate = () => {
+    setAppLogo(SheetService.getLogoUrl());
+  };
 
   const handleViewChange = (newView: 'user' | 'admin') => {
     if (newView === 'admin' && !isAdminLoggedIn) {
@@ -1146,11 +1092,11 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
-       <Header onViewChange={handleViewChange} currentView={view} />
+       <Header onViewChange={handleViewChange} currentView={view} logoUrl={appLogo} />
        
        <main className="flex-grow w-full max-w-md mx-auto p-4">
           {view === 'admin' ? (
-             <AdminDashboard />
+             <AdminDashboard onConfigUpdate={handleConfigUpdate} />
           ) : (
              <>
                 {loading ? (
@@ -1159,7 +1105,7 @@ const App = () => {
                         <p className="text-slate-500 text-sm">Memproses...</p>
                     </div>
                 ) : !member ? (
-                    <StepLogin onLogin={handleLogin} />
+                    <StepLogin onLogin={handleLogin} logoUrl={appLogo} />
                 ) : member.status === UserStatus.NEW ? (
                     <StepPayment member={member} onConfirm={handlePaymentConfirm} />
                 ) : member.status === UserStatus.WAITING_APPROVAL ? (
@@ -1218,7 +1164,7 @@ const App = () => {
           )}
        </main>
 
-       <Footer />
+       <Footer logoUrl={appLogo} />
        <GeminiChat />
        <AdminLoginModal isOpen={showAdminLogin} onClose={() => setShowAdminLogin(false)} onSuccess={handleAdminSuccess} />
     </div>

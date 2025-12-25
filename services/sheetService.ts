@@ -2,6 +2,9 @@ import { MemberData, UserStatus, PaymentMethod } from '../types';
 
 const STORAGE_KEY = 'pushbike_kudus_db';
 const SCRIPT_URL_KEY = 'pushbike_script_url';
+const LOGO_URL_KEY = 'pushbike_logo_url';
+
+export const DEFAULT_LOGO = "https://cdn-icons-png.flaticon.com/512/5717/5717316.png";
 
 // Simulate network delay for mock mode
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -18,6 +21,18 @@ export const setScriptUrl = (url: string) => {
 
 export const getScriptUrl = (): string => {
   return localStorage.getItem(SCRIPT_URL_KEY) || "";
+};
+
+export const setLogoUrl = (url: string) => {
+  if (url && url.trim().length > 0) {
+    localStorage.setItem(LOGO_URL_KEY, url.trim());
+  } else {
+    localStorage.removeItem(LOGO_URL_KEY);
+  }
+};
+
+export const getLogoUrl = (): string => {
+  return localStorage.getItem(LOGO_URL_KEY) || DEFAULT_LOGO;
 };
 
 const getActiveUrl = (): string => {

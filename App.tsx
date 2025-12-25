@@ -19,6 +19,11 @@ const ADMIN_PIN = "123456";
 // 3. LINK GRUP WHATSAPP (Isi link di dalam tanda kutip, kosongkan jika belum ada)
 const WA_GROUP_LINK = "https://chat.whatsapp.com/L3MVbYUKRnIEyfbCQJrrwP"; // Contoh: "https://chat.whatsapp.com/ABCDE12345"
 
+const MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
 // --- GOOGLE APPS SCRIPT CODE TEMPLATE ---
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
@@ -877,6 +882,24 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
     });
   };
 
+  const handleDatePartChange = (part: 'day' | 'month', val: string) => {
+    const current = formData.birthDate || '';
+    // Check if current format matches "DD Month"
+    // If it's legacy YYYY-MM-DD, we overwrite it, which is fine for re-registration
+    const parts = current.includes('-') ? ['',''] : current.split(' ');
+    
+    let d = parts[0] || '';
+    let m = parts.slice(1).join(' ') || '';
+    
+    if (part === 'day') d = val;
+    if (part === 'month') m = val;
+    
+    handleChange('birthDate', `${d} ${m}`.trim());
+  };
+
+  const currentDay = formData.birthDate && !formData.birthDate.includes('-') ? formData.birthDate.split(' ')[0] : '';
+  const currentMonth = formData.birthDate && !formData.birthDate.includes('-') ? formData.birthDate.split(' ').slice(1).join(' ') : '';
+
   const toggleSameAddress = () => {
     setSameAsKK(!sameAsKK);
     if (!sameAsKK) {
@@ -938,9 +961,42 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
             </div>
           </div>
           <div>
-            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Tanggal Lahir</label>
-            <input required type="date" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none transition text-slate-600"
-              value={formData.birthDate} onChange={e => handleChange('birthDate', e.target.value)} />
+            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Tanggal Lahir (Tgl & Bulan)</label>
+            <div className="flex gap-2">
+              <div className="relative w-1/3">
+                <select 
+                  required 
+                  className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none appearance-none transition"
+                  value={currentDay}
+                  onChange={(e) => handleDatePartChange('day', e.target.value)}
+                >
+                  <option value="">Tgl</option>
+                  {Array.from({length: 31}, (_, i) => i + 1).map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-4 pointer-events-none text-slate-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+              
+              <div className="relative w-2/3">
+                <select 
+                  required 
+                  className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none appearance-none transition"
+                  value={currentMonth}
+                  onChange={(e) => handleDatePartChange('month', e.target.value)}
+                >
+                  <option value="">Bulan</option>
+                  {MONTHS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-4 pointer-events-none text-slate-500">
+                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1017,170 +1073,134 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
   );
 };
 
-const StepSuccess = () => (
-  <div className="animate-fade-in text-center space-y-6 py-10">
-    <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 shadow-lg shadow-green-100">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
-    </div>
-    <div>
-      <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Registrasi Berhasil!</h2>
-      <p className="text-slate-500 mt-2 text-sm">Terima kasih, data Anda telah tersimpan aman di sistem kami.</p>
-    </div>
-
-    {/* WHATSAPP GROUP PLACEHOLDER */}
-    <div className={`bg-gradient-to-br ${WA_GROUP_LINK ? 'from-green-50 to-green-100 border-green-200' : 'from-slate-50 to-slate-100 border-slate-200'} border p-5 rounded-2xl text-left space-y-3 shadow-sm relative overflow-hidden`}>
-        <div className={`absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 ${WA_GROUP_LINK ? 'bg-green-200' : 'bg-slate-200'} rounded-full opacity-50 blur-xl`}></div>
-        <div className={`flex items-center gap-2 ${WA_GROUP_LINK ? 'text-green-800' : 'text-slate-700'} font-bold text-lg relative z-10`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.696c1.029.575 1.943.865 3.053.865 3.183 0 5.768-2.586 5.769-5.766.001-3.182-2.585-5.767-5.766-5.767zm6.145 12.353l-.001.001a8.625 8.625 0 01-4.145.923c-1.396 0-2.588-.369-3.729-1.017l-3.32.871.884-3.238c-.733-1.185-1.139-2.382-1.139-3.832 0-3.669 3.992-7.653 7.653-7.653 4.22 0 7.654 3.434 7.654 7.653 0 2.652-1.383 5.045-3.857 6.292z"/></svg>
-            Grup WhatsApp Member
-        </div>
-        
-        <p className="text-sm text-slate-600 leading-relaxed relative z-10">
-           {WA_GROUP_LINK 
-             ? "Silakan bergabung ke grup WhatsApp member untuk mendapatkan informasi jadwal latihan dan event terbaru."
-             : "Link undangan grup WhatsApp untuk member baru akan kami informasikan menyusul melalui pesan pribadi (Japri) atau saat latihan."}
-        </p>
-
-        {WA_GROUP_LINK ? (
-           <a 
-             href={WA_GROUP_LINK}
-             target="_blank"
-             rel="noopener noreferrer"
-             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-transform active:scale-95"
-           >
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-             Gabung Grup Sekarang
-           </a>
-        ) : (
-           <button disabled className="w-full py-3 bg-white/50 border border-slate-300 text-slate-400 font-bold rounded-xl text-sm cursor-not-allowed flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              Link Menyusul
-           </button>
-        )}
-    </div>
-
-    <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-500 font-medium">
-      Sampai jumpa di latihan berikutnya! 👋
-    </div>
-  </div>
-);
-
-// --- Main App ---
-
-export default function App() {
-  const [viewMode, setViewMode] = useState<'user' | 'admin'>('user');
+const App = () => {
+  const [view, setView] = useState<'user' | 'admin'>('user');
   const [member, setMember] = useState<MemberData | null>(null);
+  const [loading, setLoading] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
 
-  // Auto-config logic: Check URL for ?config=SCRIPT_URL
+  // Check URL for config
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const configParam = params.get('config');
-    if (configParam) {
-      try {
-        const decodedUrl = decodeURIComponent(configParam);
-        SheetService.setScriptUrl(decodedUrl);
-        // Remove param from URL for cleaner UI (optional)
-        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-        window.history.replaceState({path: cleanUrl}, '', cleanUrl);
-        // Note: AdminDashboard inside will read the updated localStorage on mount/interaction
-      } catch (e) {
-        console.error("Failed to parse config url", e);
-      }
+    const config = params.get('config');
+    if (config) {
+      SheetService.setScriptUrl(config);
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 
+  const handleViewChange = (newView: 'user' | 'admin') => {
+    if (newView === 'admin' && !isAdminLoggedIn) {
+      setShowAdminLogin(true);
+    } else {
+      setView(newView);
+    }
+  };
+
+  const handleAdminSuccess = () => {
+    setIsAdminLoggedIn(true);
+    setShowAdminLogin(false);
+    setView('admin');
+  };
+
   const handleLogin = async (wa: string, nickname: string) => {
+    setLoading(true);
     try {
       const data = await SheetService.checkMemberStatus(wa, nickname);
       setMember(data);
-    } catch (error) {
-      console.error(error);
-      // Don't alert on background polling unless it's a hard failure
+    } catch (e) {
+      alert("Gagal memuat data. " + e);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handlePaymentConfirm = async (method: PaymentMethod) => {
     if (!member) return;
+    setLoading(true);
     try {
-      const updated = await SheetService.confirmPayment(member.whatsapp, method);
-      setMember(updated);
-    } catch (error) {
-      console.error(error);
-      alert("Gagal melakukan konfirmasi. Silakan coba lagi.");
+      const data = await SheetService.confirmPayment(member.whatsapp, method);
+      setMember(data);
+    } catch (e) {
+      alert("Gagal konfirmasi: " + e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckStatus = async () => {
+    if (!member) return;
+    try {
+      const data = await SheetService.checkMemberStatus(member.whatsapp);
+      if (data.status !== member.status) {
+        setMember(data);
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const handleSubmitForm = async (data: Partial<MemberData>) => {
     if (!member) return;
+    setLoading(true);
     try {
       const updated = await SheetService.submitRegistration(member.whatsapp, data);
       setMember(updated);
-    } catch (error) {
-      console.error(error);
-      alert("Gagal menyimpan data. Silakan coba lagi.");
+    } catch (e) {
+      alert("Gagal menyimpan data: " + e);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleChangeView = (view: 'user' | 'admin') => {
-    if (view === 'admin') {
-      setShowAdminLogin(true);
-    } else {
-      setViewMode('user');
-    }
+  const handleReset = () => {
+      setMember(null);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
-      <Header currentView={viewMode} onViewChange={handleChangeView} />
-      
-      {/* Admin Login Modal */}
-      <AdminLoginModal 
-        isOpen={showAdminLogin} 
-        onClose={() => setShowAdminLogin(false)} 
-        onSuccess={() => {
-          setViewMode('admin');
-          setShowAdminLogin(false);
-        }}
-      />
-
-      <main className="max-w-md mx-auto w-full p-4 mt-6 flex-1">
-        {viewMode === 'admin' ? (
-          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-            <AdminDashboard />
-          </div>
-        ) : (
-          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 sm:p-8">
-            {!member && (
-              <StepLogin onLogin={handleLogin} />
-            )}
-
-            {member && member.status === UserStatus.NEW && (
-              <StepPayment member={member} onConfirm={handlePaymentConfirm} />
-            )}
-
-            {member && member.status === UserStatus.WAITING_APPROVAL && (
-               <div className="relative">
-                  <StepWaitingApproval onCheckStatus={() => handleLogin(member.whatsapp, member.nickname || '')} />
-               </div>
-            )}
-
-            {member && member.status === UserStatus.APPROVED && (
-              <StepForm onSubmit={handleSubmitForm} initialData={member} />
-            )}
-
-            {member && member.status === UserStatus.REGISTERED && (
-              <StepSuccess />
-            )}
-          </div>
-        )}
-      </main>
-
-      <Footer />
-
-      {viewMode === 'user' && <GeminiChat />}
-    </div>
-  );
-}
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
+       <Header onViewChange={handleViewChange} currentView={view} />
+       
+       <main className="flex-grow w-full max-w-md mx-auto p-4">
+          {view === 'admin' ? (
+             <AdminDashboard />
+          ) : (
+             <>
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mb-4"></div>
+                        <p className="text-slate-500 text-sm">Memproses...</p>
+                    </div>
+                ) : !member ? (
+                    <StepLogin onLogin={handleLogin} />
+                ) : member.status === UserStatus.NEW ? (
+                    <StepPayment member={member} onConfirm={handlePaymentConfirm} />
+                ) : member.status === UserStatus.WAITING_APPROVAL ? (
+                    <StepWaitingApproval onCheckStatus={handleCheckStatus} />
+                ) : member.status === UserStatus.APPROVED ? (
+                    <StepForm onSubmit={handleSubmitForm} initialData={member} />
+                ) : member.status === UserStatus.REGISTERED ? (
+                    <div className="text-center py-10 animate-fade-in space-y-6">
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 shadow-inner">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-slate-800">Pendaftaran Selesai!</h2>
+                            <p className="text-slate-500 text-sm mt-2 max-w-xs mx-auto">
+                                Terima kasih telah mendaftar ulang. Sampai jumpa di latihan berikutnya!
+                            </p>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 max-w-sm mx-auto text-left space-y-3">
+                            <div className="border-b pb-2 mb-2">
+                                <p className="text-xs text-slate-400 uppercase tracking-wide">Member Card</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">Nama Lengkap</p>
+                                <p className="font-bold text-slate-800 text-lg">{member.fullName}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs text-slate-500">Panggilan</p>
+                                    <p className="font-

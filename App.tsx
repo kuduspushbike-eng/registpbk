@@ -3,7 +3,20 @@ import { MemberData, UserStatus, ShirtSize, BIRTH_YEARS } from './types';
 import * as SheetService from './services/sheetService';
 import GeminiChat from './components/GeminiChat';
 
-// --- Sub-components for better organization within App.tsx for simplicity ---
+// --- UTILS ---
+
+// Standarisasi nomor WA agar tidak double data (selalu 08xxx)
+const sanitizePhoneNumber = (phone: string): string => {
+  let clean = phone.replace(/\D/g, ''); // Hapus non-angka
+  if (clean.startsWith('62')) {
+    clean = '0' + clean.substring(2);
+  } else if (clean.startsWith('8')) {
+    clean = '0' + clean;
+  }
+  return clean;
+};
+
+// --- Sub-components ---
 
 const Header = ({ onViewChange, currentView }: { onViewChange: (view: 'user' | 'admin') => void, currentView: 'user' | 'admin' }) => (
   <header className="bg-white border-b sticky top-0 z-10">
@@ -62,21 +75,13 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadData();
+    // Auto refresh admin dashboard every 15 seconds
+    const interval = setInterval(() => loadData(false), 15000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Helper to ensure WA is displayed with leading 0
-  const formatDisplayWA = (wa: string) => {
-    let clean = wa.toString().replace(/\D/g, '');
-    if (clean.startsWith('62')) {
-      clean = '0' + clean.substring(2);
-    } else if (!clean.startsWith('0')) {
-      clean = '0' + clean;
-    }
-    return clean;
-  };
-
   const handleApprove = async (wa: string) => {
-    const displayWA = formatDisplayWA(wa);
+    const displayWA = sanitizePhoneNumber(wa);
     if(!window.confirm(`Setujui pembayaran untuk nomor ${displayWA}?`)) return;
     
     setProcessingId(wa);
@@ -118,7 +123,7 @@ const AdminDashboard = () => {
     SheetService.setScriptUrl(urlInput);
     setConfigUrl(urlInput);
     setIsEditingConfig(false);
-    loadData(true); // Reload to test connection
+    loadData(true); 
   };
 
   return (
@@ -141,7 +146,7 @@ const AdminDashboard = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <div className="font-mono text-lg font-bold text-slate-800 tracking-wide">
-                    {formatDisplayWA(m.whatsapp)}
+                    {sanitizePhoneNumber(m.whatsapp)}
                   </div>
                   <div className="text-xs text-slate-500">
                     Tagihan: <span className="font-medium text-slate-700">Rp {m.paymentAmount.toLocaleString('id-ID')}</span>
@@ -167,14 +172,9 @@ const AdminDashboard = () => {
                       <span className="text-slate-500">Lahir:</span>
                       <span>{m.birthYear}</span>
                     </p>
-                    <p className="flex justify-between">
-                       <span className="text-slate-500">Size:</span>
-                       <span className="font-bold bg-slate-200 px-1 rounded">{m.shirtSize}</span>
-                    </p>
                  </div>
               )}
 
-              {/* Show Approval Button for both WAITING and NEW status (manual override) */}
               {(m.status === UserStatus.WAITING_APPROVAL || m.status === UserStatus.NEW) && (
                 <div className="pt-2 border-t mt-1">
                   <button 
@@ -188,15 +188,7 @@ const AdminDashboard = () => {
                            : 'bg-white border border-green-600 text-green-700 hover:bg-green-50'
                       }`}
                   >
-                    {processingId === m.whatsapp ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Memproses...
-                      </>
-                    ) : (m.status === UserStatus.WAITING_APPROVAL ? 'Verifikasi Pembayaran' : 'Setujui Manual (Override)')}
+                    {processingId === m.whatsapp ? 'Memproses...' : (m.status === UserStatus.WAITING_APPROVAL ? 'Verifikasi Pembayaran' : 'Setujui Manual (Override)')}
                   </button>
                 </div>
               )}
@@ -204,25 +196,6 @@ const AdminDashboard = () => {
           ))}
         </div>
       )}
-
-      {/* DANGER ZONE: WIPE DATA */}
-      <div className="border-t border-slate-200 pt-8 mt-8 space-y-4">
-        <h3 className="font-bold text-slate-800">Manajemen Data</h3>
-        <button
-          onClick={handleWipeData}
-          disabled={wiping}
-          className="w-full border border-red-200 bg-red-50 text-red-600 py-3 rounded-lg text-sm font-semibold hover:bg-red-100 transition flex items-center justify-center gap-2"
-        >
-          {wiping ? 'Menghapus...' : (
-             <>
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-               </svg>
-               Reset / Hapus Semua Data Member
-             </>
-          )}
-        </button>
-      </div>
 
       {/* INTEGRATION SETTINGS SECTION */}
       <div className="border-t border-slate-200 pt-8 mt-4">
@@ -262,6 +235,12 @@ const AdminDashboard = () => {
         )}
       </div>
 
+      <div className="mt-8 border-t pt-8">
+        <button onClick={handleWipeData} disabled={wiping} className="text-xs text-red-400 hover:text-red-600">
+          {wiping ? 'Menghapus...' : 'Reset Database'}
+        </button>
+      </div>
+
     </div>
   );
 };
@@ -273,8 +252,11 @@ const StepLogin = ({ onLogin }: { onLogin: (wa: string) => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (input.length < 9) return alert('Nomor WhatsApp tidak valid');
+    
     setLoading(true);
-    await onLogin(input);
+    // Sanitize input before sending
+    const cleanNumber = sanitizePhoneNumber(input);
+    await onLogin(cleanNumber);
     setLoading(false);
   };
 
@@ -350,25 +332,43 @@ const StepPayment = ({ member, onConfirm }: { member: MemberData, onConfirm: () 
   );
 };
 
-const StepWaitingApproval = ({ onCheckStatus }: { onCheckStatus: () => void }) => (
-  <div className="animate-fade-in text-center space-y-6 py-8">
-    <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto text-yellow-600">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
+// Polling Component: Checks status every 5 seconds
+const StepWaitingApproval = ({ onCheckStatus }: { onCheckStatus: () => void }) => {
+  useEffect(() => {
+    // Auto refresh status every 5 seconds to see if admin approved
+    const interval = setInterval(() => {
+      onCheckStatus();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [onCheckStatus]);
+
+  return (
+    <div className="animate-fade-in text-center space-y-6 py-8">
+      <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto text-yellow-600 relative">
+        <div className="absolute inset-0 rounded-full border-4 border-yellow-200 animate-ping opacity-25"></div>
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div className="space-y-2">
+        <h2 className="text-xl font-bold text-slate-800">Menunggu Verifikasi</h2>
+        <p className="text-slate-600">
+          Tim kami sedang mengecek pembayaran Anda.<br/>
+          Halaman ini akan otomatis berubah setelah disetujui.
+        </p>
+      </div>
+      <div className="flex justify-center">
+        <button
+          onClick={onCheckStatus}
+          className="flex items-center gap-2 text-orange-600 font-medium hover:text-orange-700 text-sm bg-orange-50 px-4 py-2 rounded-full"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          Cek Status Sekarang
+        </button>
+      </div>
     </div>
-    <div className="space-y-2">
-      <h2 className="text-xl font-bold text-slate-800">Menunggu Verifikasi</h2>
-      <p className="text-slate-600">Tim kami sedang mengecek pembayaran Anda. Mohon tunggu sebentar.</p>
-    </div>
-    <button
-      onClick={onCheckStatus}
-      className="text-orange-600 font-medium hover:text-orange-700 text-sm"
-    >
-      Refresh Status
-    </button>
-  </div>
-);
+  );
+};
 
 const StepForm = ({ onSubmit }: { onSubmit: (data: Partial<MemberData>) => void }) => {
   const [formData, setFormData] = useState({
@@ -411,6 +411,9 @@ const StepForm = ({ onSubmit }: { onSubmit: (data: Partial<MemberData>) => void 
 
   return (
     <form onSubmit={handleSubmit} className="animate-fade-in space-y-6">
+      <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-6">
+        ✅ Pembayaran telah diverifikasi. Silakan lengkapi data anak di bawah ini.
+      </div>
       
       {/* SECTION: CHILD DATA */}
       <div className="space-y-4">
@@ -546,7 +549,7 @@ export default function App() {
       setMember(data);
     } catch (error) {
       console.error(error);
-      alert("Terjadi kesalahan koneksi. Pastikan URL Google Sheet benar atau internet lancar.");
+      // Don't alert on background polling unless it's a hard failure
     }
   };
 
@@ -571,11 +574,6 @@ export default function App() {
       alert("Gagal menyimpan data. Silakan coba lagi.");
     }
   };
-
-  // Effect to sync member state if needed (optional for simple flow)
-  useEffect(() => {
-    // If we wanted to poll status for waiting approval, we would do it here
-  }, [member]);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20">
@@ -613,7 +611,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Hide chat bot in admin mode to clean up UI */}
       {viewMode === 'user' && <GeminiChat />}
     </div>
   );

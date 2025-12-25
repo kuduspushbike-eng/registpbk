@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MemberData, UserStatus, ShirtSize, BIRTH_YEARS } from './types';
 import * as SheetService from './services/sheetService';
 import GeminiChat from './components/GeminiChat';
+import QRCode from 'react-qr-code';
 
 // --- UTILS ---
 
@@ -50,6 +51,7 @@ const AdminDashboard = () => {
   const [isEditingConfig, setIsEditingConfig] = useState(false);
   const [urlInput, setUrlInput] = useState(SheetService.getScriptUrl());
   const [wiping, setWiping] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   const loadData = async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -124,6 +126,17 @@ const AdminDashboard = () => {
     setConfigUrl(urlInput);
     setIsEditingConfig(false);
     loadData(true); 
+  };
+
+  const getShareUrl = () => {
+    if (!configUrl) return "";
+    return `${window.location.origin}${window.location.pathname}?config=${encodeURIComponent(configUrl)}`;
+  };
+
+  const copyShareLink = () => {
+    if (!configUrl) return alert("Belum ada URL Google Sheet yang tersimpan.");
+    navigator.clipboard.writeText(getShareUrl());
+    alert("Link berhasil disalin! Bagikan link ini agar device lain otomatis terintegrasi.");
   };
 
   return (
@@ -202,7 +215,7 @@ const AdminDashboard = () => {
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-bold text-slate-800">Pengaturan Integrasi</h3>
           <span className={`text-xs px-2 py-1 rounded font-medium ${configUrl ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-            {configUrl ? 'Mode Live (Google Sheet)' : 'Mode Demo (Offline)'}
+            {configUrl ? 'Mode Live' : 'Mode Demo'}
           </span>
         </div>
         
@@ -224,13 +237,27 @@ const AdminDashboard = () => {
              </div>
           </div>
         ) : (
-          <div className="text-sm text-slate-500 flex justify-between items-center bg-slate-50 p-3 rounded border border-slate-100">
-            <span className="truncate max-w-[250px]">
-              {configUrl ? configUrl : "Menggunakan database lokal (simulasi)."}
-            </span>
-            <button onClick={() => { setUrlInput(configUrl); setIsEditingConfig(true); }} className="text-orange-600 font-medium text-xs hover:underline">
-              {configUrl ? "Ubah URL" : "Hubungkan Google Sheet"}
-            </button>
+          <div className="bg-slate-50 p-3 rounded border border-slate-100 space-y-3">
+            <div className="text-sm text-slate-500 break-all">
+               {configUrl ? configUrl : "Menggunakan database lokal (simulasi)."}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => { setUrlInput(configUrl); setIsEditingConfig(true); }} className="text-orange-600 font-medium text-xs hover:underline border border-orange-200 px-3 py-1 rounded bg-white">
+                {configUrl ? "Ubah URL" : "Hubungkan Google Sheet"}
+              </button>
+              {configUrl && (
+                <>
+                  <button onClick={copyShareLink} className="text-blue-600 font-medium text-xs hover:underline border border-blue-200 px-3 py-1 rounded bg-white flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                    Salin Link
+                  </button>
+                  <button onClick={() => setShowQR(true)} className="text-slate-700 font-medium text-xs hover:bg-slate-100 border border-slate-300 px-3 py-1 rounded bg-white flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                    Tampilkan QR Code
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -240,6 +267,35 @@ const AdminDashboard = () => {
           {wiping ? 'Menghapus...' : 'Reset Database'}
         </button>
       </div>
+
+      {/* QR CODE MODAL */}
+      {showQR && configUrl && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
+          <div className="bg-white p-6 rounded-xl max-w-sm w-full text-center space-y-6 animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="space-y-2">
+              <h3 className="font-bold text-xl text-slate-800">Scan untuk Registrasi</h3>
+              <p className="text-sm text-slate-500">Scan QR Code ini menggunakan kamera HP untuk membuka formulir registrasi.</p>
+            </div>
+            
+            <div className="flex justify-center bg-white p-2">
+               <div className="border-4 border-slate-900 p-2 rounded-lg bg-white">
+                 <QRCode value={getShareUrl()} size={200} />
+               </div>
+            </div>
+            
+            <div className="text-xs text-slate-400 bg-slate-50 p-2 rounded">
+              Otomatis terhubung ke Google Sheet
+            </div>
+
+            <button 
+              onClick={() => setShowQR(false)} 
+              className="w-full bg-slate-900 text-white font-medium py-3 rounded-lg hover:bg-slate-800"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
@@ -542,6 +598,24 @@ const StepSuccess = () => (
 export default function App() {
   const [viewMode, setViewMode] = useState<'user' | 'admin'>('user');
   const [member, setMember] = useState<MemberData | null>(null);
+
+  // Auto-config logic: Check URL for ?config=SCRIPT_URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const configParam = params.get('config');
+    if (configParam) {
+      try {
+        const decodedUrl = decodeURIComponent(configParam);
+        SheetService.setScriptUrl(decodedUrl);
+        // Remove param from URL for cleaner UI (optional)
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+        // Note: AdminDashboard inside will read the updated localStorage on mount/interaction
+      } catch (e) {
+        console.error("Failed to parse config url", e);
+      }
+    }
+  }, []);
 
   const handleLogin = async (wa: string) => {
     try {

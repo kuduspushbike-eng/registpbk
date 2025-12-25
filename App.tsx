@@ -22,6 +22,9 @@ const WA_GROUP_LINK = "https://chat.whatsapp.com/FaZDznBOKxSGEqHEMC9FkS";
 // 4. URL LOGO APLIKASI (Ganti link gambar disini)
 const DEFAULT_APP_LOGO = "https://i.postimg.cc/50tShY2v/logoo.png";
 
+// 5. URL GAMBAR SIZE CHART (Ganti link gambar size chart JPG anda disini)
+const SIZE_CHART_URL = "https://i.postimg.cc/4xtS1Nwd/sizze-chart.jpg";
+
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
@@ -233,6 +236,26 @@ const Footer = ({ logoUrl }: { logoUrl: string }) => (
     </div>
   </footer>
 );
+
+const SizeChartModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full overflow-hidden relative animate-fade-in" onClick={e => e.stopPropagation()}>
+         <div className="p-3 border-b flex justify-between items-center bg-slate-50">
+            <h3 className="font-bold text-slate-800 text-sm">Panduan Ukuran (Size Chart)</h3>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 transition">
+              &times;
+            </button>
+         </div>
+         <div className="p-1 bg-slate-100 max-h-[80vh] overflow-y-auto">
+            <img src={SIZE_CHART_URL} alt="Size Chart" className="w-full h-auto block" />
+         </div>
+      </div>
+    </div>
+  );
+};
 
 const AdminLoginModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) => {
   const [pin, setPin] = useState('');
@@ -944,6 +967,7 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
   });
 
   const [sameAddress, setSameAddress] = useState(false);
+  const [showSizeChart, setShowSizeChart] = useState(false);
 
   useEffect(() => {
     if (sameAddress) {
@@ -961,105 +985,114 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
   };
 
   return (
-    <form onSubmit={handleSubmit} className="animate-fade-in space-y-5 pb-10">
-       <div className="text-center mb-6">
-         <h2 className="text-xl font-bold text-slate-800">Lengkapi Data Diri</h2>
-         <p className="text-slate-500 text-sm">Isi formulir berikut dengan data yang benar.</p>
-       </div>
+    <>
+      <form onSubmit={handleSubmit} className="animate-fade-in space-y-5 pb-10">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-slate-800">Lengkapi Data Diri</h2>
+          <p className="text-slate-500 text-sm">Isi formulir berikut dengan data yang benar.</p>
+        </div>
 
-       <div className="space-y-4">
-         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Anak</h3>
-            
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap Anak</label>
-              <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                value={formData.fullName} onChange={e => handleChange('fullName', e.target.value)} />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Anak</h3>
+              
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Panggilan</label>
-                <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase" 
-                  value={formData.nickname} onChange={e => handleChange('nickname', e.target.value.toUpperCase())} />
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap Anak</label>
+                <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.fullName} onChange={e => handleChange('fullName', e.target.value)} />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Panggilan</label>
+                  <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase" 
+                    value={formData.nickname} onChange={e => handleChange('nickname', e.target.value.toUpperCase())} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Tahun Lahir</label>
+                  <select className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+                    value={formData.birthYear} onChange={e => handleChange('birthYear', Number(e.target.value))}>
+                    {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Tanggal Lahir Lengkap</label>
+                <input type="date" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.birthDate} onChange={e => handleChange('birthDate', e.target.value)} />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-semibold text-slate-600">Ukuran Baju (Jersey)</label>
+                  <button type="button" onClick={() => setShowSizeChart(true)} className="text-[10px] text-blue-600 font-bold hover:underline flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Lihat Size Chart
+                  </button>
+                </div>
+                <div className="grid grid-cols-6 gap-1">
+                  {Object.values(ShirtSize).map(size => (
+                    <div key={size} 
+                      onClick={() => handleChange('shirtSize', size)}
+                      className={`cursor-pointer text-center py-2 text-xs font-bold rounded border transition-colors ${formData.shirtSize === size ? 'bg-orange-500 text-white border-orange-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                    >
+                      {size}
+                    </div>
+                  ))}
+                </div>
+              </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Orang Tua</h3>
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ayah</label>
+                <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.fatherName} onChange={e => handleChange('fatherName', e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Tahun Lahir</label>
-                <select className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
-                  value={formData.birthYear} onChange={e => handleChange('birthYear', Number(e.target.value))}>
-                  {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ibu</label>
+                <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.motherName} onChange={e => handleChange('motherName', e.target.value)} />
               </div>
-            </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Tanggal Lahir Lengkap</label>
-              <input type="date" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                value={formData.birthDate} onChange={e => handleChange('birthDate', e.target.value)} />
-            </div>
-
-            <div>
-               <label className="block text-xs font-semibold text-slate-600 mb-1">Ukuran Baju (Jersey)</label>
-               <div className="grid grid-cols-6 gap-1">
-                 {Object.values(ShirtSize).map(size => (
-                   <div key={size} 
-                     onClick={() => handleChange('shirtSize', size)}
-                     className={`cursor-pointer text-center py-2 text-xs font-bold rounded border transition-colors ${formData.shirtSize === size ? 'bg-orange-500 text-white border-orange-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                   >
-                     {size}
-                   </div>
-                 ))}
-               </div>
-            </div>
-         </div>
-
-         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Orang Tua</h3>
-            
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ayah</label>
-              <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                value={formData.fatherName} onChange={e => handleChange('fatherName', e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ibu</label>
-              <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                value={formData.motherName} onChange={e => handleChange('motherName', e.target.value)} />
-            </div>
-         </div>
-
-         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Alamat</h3>
-            
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat Sesuai KK</label>
-              <textarea required rows={2} className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                value={formData.addressKK} onChange={e => handleChange('addressKK', e.target.value)}></textarea>
-            </div>
-
-            <div className="flex items-center gap-2 py-1">
-               <input type="checkbox" id="sameAddr" className="rounded text-orange-500 focus:ring-orange-500" 
-                 checked={sameAddress} onChange={e => setSameAddress(e.target.checked)} />
-               <label htmlFor="sameAddr" className="text-xs text-slate-600 cursor-pointer">Alamat Domisili sama dengan KK</label>
-            </div>
-
-            {!sameAddress && (
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Alamat</h3>
+              
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat Domisili</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat Sesuai KK</label>
                 <textarea required rows={2} className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                  value={formData.addressDomicile} onChange={e => handleChange('addressDomicile', e.target.value)}></textarea>
+                  value={formData.addressKK} onChange={e => handleChange('addressKK', e.target.value)}></textarea>
               </div>
-            )}
-         </div>
-       </div>
 
-       <button
-          type="submit"
-          className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition shadow-lg shadow-slate-200"
-        >
-          Simpan Data Pendaftaran
-        </button>
-    </form>
+              <div className="flex items-center gap-2 py-1">
+                <input type="checkbox" id="sameAddr" className="rounded text-orange-500 focus:ring-orange-500" 
+                  checked={sameAddress} onChange={e => setSameAddress(e.target.checked)} />
+                <label htmlFor="sameAddr" className="text-xs text-slate-600 cursor-pointer">Alamat Domisili sama dengan KK</label>
+              </div>
+
+              {!sameAddress && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat Domisili</label>
+                  <textarea required rows={2} className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                    value={formData.addressDomicile} onChange={e => handleChange('addressDomicile', e.target.value)}></textarea>
+                </div>
+              )}
+          </div>
+        </div>
+
+        <button
+            type="submit"
+            className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition shadow-lg shadow-slate-200"
+          >
+            Simpan Data Pendaftaran
+          </button>
+      </form>
+      <SizeChartModal isOpen={showSizeChart} onClose={() => setShowSizeChart(false)} />
+    </>
   );
 };
 

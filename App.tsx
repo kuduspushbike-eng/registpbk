@@ -406,15 +406,20 @@ const AdminDashboard = () => {
     loadData(true); 
   };
 
+  // Logic untuk membuat URL Share yang mengandung Config
   const getShareUrl = () => {
-    if (!configUrl) return "";
-    return `${window.location.origin}${window.location.pathname}?config=${encodeURIComponent(configUrl)}`;
+    const baseUrl = window.location.href.split('?')[0];
+    if (configUrl) {
+      // Encode URL Script agar bisa jadi parameter
+      return `${baseUrl}?config=${encodeURIComponent(configUrl)}`;
+    }
+    return baseUrl;
   };
 
   const copyShareLink = () => {
     if (!configUrl) return alert("Belum ada URL Google Sheet yang tersimpan.");
     navigator.clipboard.writeText(getShareUrl());
-    alert("Link berhasil disalin! Bagikan link ini agar device lain otomatis terintegrasi.");
+    alert("Link Integrasi berhasil disalin! Bagikan link ini ke member/device lain.");
   };
 
   return (
@@ -541,7 +546,7 @@ const AdminDashboard = () => {
                 <>
                   <button onClick={copyShareLink} className="text-blue-600 font-medium text-xs hover:underline border border-blue-200 px-3 py-1.5 rounded bg-white hover:bg-blue-50 flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                    Salin Link
+                    Salin Link Integrasi
                   </button>
                   <button onClick={() => setShowQR(true)} className="bg-slate-800 text-white font-medium text-xs hover:bg-slate-900 border border-slate-800 px-3 py-1.5 rounded flex items-center gap-1 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
@@ -566,7 +571,10 @@ const AdminDashboard = () => {
           <div className="bg-white p-6 rounded-xl max-w-sm w-full text-center space-y-6 animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="space-y-2">
               <h3 className="font-bold text-xl text-slate-800">Scan untuk Registrasi</h3>
-              <p className="text-sm text-slate-500">Member cukup scan QR ini. Aplikasi akan terbuka dan <strong>otomatis terhubung</strong> ke database Google Sheet ini.</p>
+              <div className="bg-green-50 text-green-700 text-xs p-2 rounded border border-green-200">
+                 <strong>QR Code Terintegrasi</strong><br/>
+                 Member yang scan QR ini akan otomatis terhubung ke database tanpa perlu setting manual.
+              </div>
             </div>
             
             <div className="flex justify-center bg-white p-2">
@@ -575,10 +583,6 @@ const AdminDashboard = () => {
                </div>
             </div>
             
-            <div className="text-xs text-slate-400 bg-slate-50 p-2 rounded">
-              Tidak perlu setting manual di HP member
-            </div>
-
             <button 
               onClick={() => setShowQR(false)} 
               className="w-full bg-slate-900 text-white font-medium py-3 rounded-lg hover:bg-slate-800"

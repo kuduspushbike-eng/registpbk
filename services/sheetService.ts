@@ -55,11 +55,11 @@ const callScript = async (action: string, payload: any = {}) => {
 // SERVICE METHODS
 // ============================================================================
 
-export const checkMemberStatus = async (whatsapp: string): Promise<MemberData> => {
+export const checkMemberStatus = async (whatsapp: string, nickname?: string): Promise<MemberData> => {
   // 1. REAL MODE
   if (getActiveUrl()) {
     try {
-      return await callScript('check_status', { whatsapp });
+      return await callScript('check_status', { whatsapp, nickname });
     } catch (e) {
       console.warn("API Error, falling back to mock check for safety", e);
       throw e;
@@ -77,6 +77,7 @@ export const checkMemberStatus = async (whatsapp: string): Promise<MemberData> =
   const randomDigits = Math.floor(Math.random() * 90 + 10); // 10-99
   const newMember: MemberData = {
     whatsapp,
+    nickname: nickname || '',
     status: UserStatus.NEW,
     paymentCode: randomDigits,
     paymentAmount: 200000 + randomDigits // Default to transfer amount initially

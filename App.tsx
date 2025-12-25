@@ -77,12 +77,14 @@ function getAllMembers(sheet) {
 
 function handleCheckStatus(sheet, params) {
   var wa = params.whatsapp;
+  var nickname = params.nickname || "";
   var rowIndex = findRowIndex(sheet, wa);
   
   if (rowIndex == -1) {
     var randomCode = Math.floor(Math.random() * 90 + 10);
     var amount = 200000 + randomCode;
-    var newRow = [new Date(), wa, "NEW", amount, randomCode, "", "", "", "", "", "", "", "", "", ""];
+    // Column H (index 7) is Nickname
+    var newRow = [new Date(), wa, "NEW", amount, randomCode, "", "", nickname, "", "", "", "", "", "", ""];
     sheet.appendRow(newRow);
     return rowToMember(newRow);
   } else {
@@ -597,18 +599,21 @@ const AdminDashboard = () => {
   );
 };
 
-const StepLogin = ({ onLogin }: { onLogin: (wa: string) => void }) => {
-  const [input, setInput] = useState('');
+const StepLogin = ({ onLogin }: { onLogin: (wa: string, nickname: string) => void }) => {
+  const [phone, setPhone] = useState('');
+  const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.length < 9) return alert('Nomor WhatsApp tidak valid');
+    if (phone.length < 9) return alert('Nomor WhatsApp tidak valid');
+    if (nickname.trim().length < 2) return alert('Nama panggilan harus diisi');
     
     setLoading(true);
     // Sanitize input before sending
-    const cleanNumber = sanitizePhoneNumber(input);
-    await onLogin(cleanNumber);
+    const cleanNumber = sanitizePhoneNumber(phone);
+    const cleanNick = nickname.toUpperCase();
+    await onLogin(cleanNumber, cleanNick);
     setLoading(false);
   };
 
@@ -616,7 +621,7 @@ const StepLogin = ({ onLogin }: { onLogin: (wa: string) => void }) => {
     <div className="animate-fade-in space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-slate-800">Selamat Datang</h2>
-        <p className="text-slate-500">Silakan masukkan nomor WhatsApp untuk memulai proses registrasi ulang.</p>
+        <p className="text-slate-500">Silakan lengkapi data awal untuk memulai proses registrasi.</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -625,8 +630,19 @@ const StepLogin = ({ onLogin }: { onLogin: (wa: string) => void }) => {
             type="tel"
             className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
             placeholder="08123456789"
-            value={input}
-            onChange={(e) => setInput(e.target.value.replace(/\D/g, ''))}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Nama Panggilan Anak</label>
+          <input
+            type="text"
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition uppercase placeholder:normal-case"
+            placeholder="Contoh: BUDI"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value.toUpperCase())}
             required
           />
         </div>
@@ -765,10 +781,10 @@ const StepWaitingApproval = ({ onCheckStatus }: { onCheckStatus: () => void }) =
   );
 };
 
-const StepForm = ({ onSubmit }: { onSubmit: (data: Partial<MemberData>) => void }) => {
+const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberData>) => void, initialData?: MemberData }) => {
   const [formData, setFormData] = useState({
     fullName: '',
-    nickname: '',
+    nickname: initialData?.nickname || '', // PRE-FILL NICKNAME
     birthYear: '' as unknown as number,
     birthDate: '',
     fatherName: '',
@@ -977,9 +993,9 @@ export default function App() {
     }
   }, []);
 
-  const handleLogin = async (wa: string) => {
+  const handleLogin = async (wa: string, nickname: string) => {
     try {
-      const data = await SheetService.checkMemberStatus(wa);
+      const data = await SheetService.checkMemberStatus(wa, nickname);
       setMember(data);
     } catch (error) {
       console.error(error);
@@ -1048,12 +1064,12 @@ export default function App() {
 
             {member && member.status === UserStatus.WAITING_APPROVAL && (
                <div className="relative">
-                  <StepWaitingApproval onCheckStatus={() => handleLogin(member.whatsapp)} />
+                  <StepWaitingApproval onCheckStatus={() => handleLogin(member.whatsapp, member.nickname || '')} />
                </div>
             )}
 
             {member && member.status === UserStatus.APPROVED && (
-              <StepForm onSubmit={handleSubmitForm} />
+              <StepForm onSubmit={handleSubmitForm} initialData={member} />
             )}
 
             {member && member.status === UserStatus.REGISTERED && (

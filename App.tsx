@@ -188,25 +188,39 @@ const sanitizePhoneNumber = (phone: string): string => {
 // --- Sub-components ---
 
 const Header = ({ onViewChange, currentView }: { onViewChange: (view: 'user' | 'admin') => void, currentView: 'user' | 'admin' }) => (
-  <header className="bg-white border-b sticky top-0 z-10">
+  <header className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-20 shadow-sm">
     <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
-      <div className="flex items-center gap-2 cursor-pointer" onClick={() => onViewChange('user')}>
-        <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xs">PK</div>
-        <h1 className="font-bold text-slate-800 text-lg">Pushbike Kudus</h1>
+      <div className="flex items-center gap-2 cursor-pointer transition hover:opacity-80" onClick={() => onViewChange('user')}>
+        <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md">PK</div>
+        <h1 className="font-bold text-slate-800 text-lg tracking-tight">Pushbike Kudus</h1>
       </div>
       <div className="flex items-center gap-2">
          {currentView === 'user' ? (
-           <button onClick={() => onViewChange('admin')} className="text-xs text-slate-500 hover:text-orange-600 font-medium">
+           <button onClick={() => onViewChange('admin')} className="px-3 py-1 rounded-full bg-slate-100 text-xs text-slate-600 hover:bg-slate-200 font-medium transition">
              Login Admin
            </button>
          ) : (
-           <button onClick={() => onViewChange('user')} className="text-xs text-slate-500 hover:text-orange-600 font-medium">
+           <button onClick={() => onViewChange('user')} className="px-3 py-1 rounded-full bg-orange-50 text-xs text-orange-600 hover:bg-orange-100 font-medium transition">
              Mode Member
            </button>
          )}
       </div>
     </div>
   </header>
+);
+
+const Footer = () => (
+  <footer className="py-8 text-center text-slate-400">
+    <div className="max-w-md mx-auto px-4 flex flex-col items-center gap-2">
+      <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 font-bold text-[10px] mb-1 opacity-50">PK</div>
+      <p className="text-xs font-medium text-slate-500">
+        &copy; {new Date().getFullYear()} Pushbike Kudus. All rights reserved.
+      </p>
+      <p className="text-[10px] text-slate-400">
+        Made with <span className="text-red-400">❤</span> by Pushbike Kudus Team
+      </p>
+    </div>
+  </footer>
 );
 
 const AdminLoginModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) => {
@@ -228,29 +242,32 @@ const AdminLoginModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl max-w-xs w-full p-6 animate-fade-in" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-bold text-slate-800 mb-4 text-center">Keamanan Admin</h3>
-        <p className="text-sm text-slate-500 mb-4 text-center">Masukkan PIN untuk mengakses dashboard.</p>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-xs w-full p-6 animate-fade-in transform scale-100" onClick={e => e.stopPropagation()}>
+        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+        </div>
+        <h3 className="text-lg font-bold text-slate-800 mb-2 text-center">Admin Access</h3>
+        <p className="text-xs text-slate-500 mb-6 text-center">Masukkan PIN keamanan untuk melanjutkan.</p>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="password"
             autoFocus
-            className={`w-full text-center text-2xl tracking-widest p-2 border rounded-lg focus:outline-none focus:ring-2 ${error ? 'border-red-500 ring-red-200' : 'border-slate-300 focus:ring-orange-500'}`}
+            className={`w-full text-center text-2xl tracking-widest p-3 border rounded-xl focus:outline-none focus:ring-4 transition-all ${error ? 'border-red-500 ring-red-100 bg-red-50' : 'border-slate-200 focus:ring-orange-100 focus:border-orange-500'}`}
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             placeholder="••••••"
             maxLength={6}
           />
-          {error && <p className="text-xs text-red-500 text-center font-bold">PIN Salah!</p>}
+          {error && <p className="text-xs text-red-500 text-center font-bold animate-pulse">PIN Salah, silakan coba lagi.</p>}
           
-          <button type="submit" className="w-full bg-slate-900 text-white py-2 rounded-lg font-medium hover:bg-slate-800">
-            Masuk
+          <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded-xl font-medium hover:bg-slate-800 shadow-lg shadow-slate-200 transition-all active:scale-95">
+            Masuk Dashboard
           </button>
         </form>
-        <button onClick={onClose} className="w-full mt-2 text-xs text-slate-400 hover:text-slate-600">
-          Batal
+        <button onClick={onClose} className="w-full mt-3 text-xs text-slate-400 hover:text-slate-600 py-2">
+          Batalkan
         </button>
       </div>
     </div>
@@ -266,7 +283,7 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b flex justify-between items-center">
           <h3 className="text-lg font-bold text-slate-800">Panduan Integrasi Google Sheet</h3>
@@ -382,14 +399,14 @@ const AdminDashboard = () => {
   };
 
   const handleWipeData = async () => {
-    const confirmationText = configUrl ? "Data di Google Sheet akan DIHAPUS PERMANEN." : "Data lokal akan dihapus.";
+    const confirmationText = configUrl ? "Data di GOOGLE SHEET akan DIHAPUS PERMANEN." : "Data lokal akan dihapus.";
     
-    if (window.confirm("PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA MEMBER?")) {
-      if (window.confirm(`KONFIRMASI TERAKHIR: ${confirmationText} Tindakan ini tidak bisa dibatalkan.`)) {
+    if (window.confirm("⚠️ PERINGATAN BAHAYA ⚠️\n\nApakah Anda yakin ingin MENGHAPUS SEMUA DATA MEMBER?")) {
+      if (window.confirm(`KONFIRMASI TERAKHIR:\n\n${confirmationText}\n\nTindakan ini tidak bisa dibatalkan!`)) {
         setWiping(true);
         try {
           await SheetService.wipeAllData();
-          alert("Semua data berhasil dihapus.");
+          alert("✅ Database berhasil di-reset bersih.");
           loadData(true);
         } catch (error) {
           console.error(error);
@@ -429,20 +446,29 @@ const AdminDashboard = () => {
       <IntegrationGuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
 
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-slate-800">Admin Dashboard</h2>
-        <button onClick={() => loadData(true)} className="text-sm text-orange-600 hover:underline">Refresh Data</button>
+        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <span className="w-2 h-6 bg-orange-500 rounded-full"></span>
+          Dashboard Admin
+        </h2>
+        <button onClick={() => loadData(true)} className="text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-3 py-1 rounded-full transition font-medium flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          Refresh
+        </button>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-10">
-           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        <div className="flex flex-col items-center justify-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-2"></div>
+           <span className="text-xs text-slate-400">Memuat data...</span>
         </div>
       ) : members.length === 0 ? (
-        <div className="text-center py-10 text-slate-400 bg-white rounded-lg border border-dashed">Belum ada data member.</div>
+        <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+          <p>Belum ada data member.</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {members.map((m) => (
-            <div key={m.whatsapp} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-3 transition hover:shadow-md">
+            <div key={m.whatsapp} className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col gap-3 transition hover:shadow-md group">
               <div className="flex justify-between items-start">
                 <div>
                   <div className="font-mono text-lg font-bold text-slate-800 tracking-wide">
@@ -468,28 +494,28 @@ const AdminDashboard = () => {
               </div>
 
               {m.status === UserStatus.REGISTERED && (
-                 <div className="text-sm bg-slate-50 p-3 rounded border border-slate-100 space-y-1">
+                 <div className="text-sm bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
                     <p className="flex justify-between">
                       <span className="text-slate-500">Anak:</span>
-                      <span className="font-medium">{m.fullName} ({m.nickname})</span>
+                      <span className="font-medium text-slate-800">{m.fullName} ({m.nickname})</span>
                     </p>
                     <p className="flex justify-between">
                       <span className="text-slate-500">Lahir:</span>
-                      <span>{m.birthYear}</span>
+                      <span className="font-medium text-slate-800">{m.birthYear}</span>
                     </p>
                  </div>
               )}
 
               {(m.status === UserStatus.WAITING_APPROVAL || m.status === UserStatus.NEW) && (
-                <div className="pt-2 border-t mt-1">
+                <div className="pt-2 border-t border-slate-100 mt-1">
                   <button 
                     onClick={() => handleApprove(m.whatsapp)}
                     disabled={processingId === m.whatsapp}
-                    className={`w-full flex justify-center items-center py-2 px-4 rounded text-sm font-semibold transition-colors
+                    className={`w-full flex justify-center items-center py-2.5 px-4 rounded-lg text-sm font-semibold transition-all transform active:scale-95
                       ${processingId === m.whatsapp 
-                        ? 'bg-slate-300 text-slate-500 cursor-not-allowed' 
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
                         : m.status === UserStatus.WAITING_APPROVAL 
-                           ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
+                           ? 'bg-green-600 hover:bg-green-700 text-white shadow-green-200 shadow-lg'
                            : 'bg-white border border-green-600 text-green-700 hover:bg-green-50'
                       }`}
                   >
@@ -503,91 +529,104 @@ const AdminDashboard = () => {
       )}
 
       {/* INTEGRATION SETTINGS SECTION */}
-      <div className="border-t border-slate-200 pt-8 mt-4">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-slate-800">Pengaturan Integrasi</h3>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mt-8 shadow-sm">
+        <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+          <h3 className="font-bold text-slate-700 text-sm">Pengaturan Database</h3>
           <button onClick={() => setShowGuide(true)} className="text-xs flex items-center gap-1 text-orange-600 font-medium hover:underline">
              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-             Panduan & Script
+             Script & Panduan
           </button>
         </div>
         
-        {isEditingConfig ? (
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-             <div className="text-xs text-slate-600">
-               Paste URL Web App dari Google Apps Script Deployment di bawah ini. Pastikan akses diatur ke <strong>'Anyone'</strong>.
-             </div>
-             <input 
-              type="text" 
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="https://script.google.com/macros/s/..."
-              className="w-full text-sm p-2 border rounded focus:ring-1 focus:ring-orange-500 outline-none"
-             />
-             <div className="flex gap-2 justify-end">
-               <button onClick={() => setIsEditingConfig(false)} className="text-slate-600 text-sm px-3 py-1 hover:bg-slate-200 rounded">Batal</button>
-               <button onClick={handleSaveConfig} className="bg-orange-600 text-white text-sm px-3 py-1 rounded hover:bg-orange-700">Simpan Koneksi</button>
-             </div>
-          </div>
-        ) : (
-          <div className="bg-slate-50 p-3 rounded border border-slate-100 space-y-3">
-             <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${configUrl ? 'bg-green-500' : 'bg-slate-300'}`}></div>
-                <div className="text-sm font-medium text-slate-700">Status: {configUrl ? 'Terhubung' : 'Mode Demo (Lokal)'}</div>
-             </div>
-             {configUrl && (
-                <div className="text-xs text-slate-400 truncate font-mono bg-white p-1 border rounded">
-                   {configUrl}
-                </div>
-             )}
-            <div className="flex flex-wrap gap-2 pt-1">
-              <button onClick={() => { setUrlInput(configUrl); setIsEditingConfig(true); }} className="text-orange-600 font-medium text-xs hover:underline border border-orange-200 px-3 py-1.5 rounded bg-white hover:bg-orange-50">
-                {configUrl ? "Ubah Konfigurasi" : "Hubungkan Google Sheet"}
-              </button>
-              {configUrl && (
-                <>
-                  <button onClick={copyShareLink} className="text-blue-600 font-medium text-xs hover:underline border border-blue-200 px-3 py-1.5 rounded bg-white hover:bg-blue-50 flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                    Salin Link Integrasi
-                  </button>
-                  <button onClick={() => setShowQR(true)} className="bg-slate-800 text-white font-medium text-xs hover:bg-slate-900 border border-slate-800 px-3 py-1.5 rounded flex items-center gap-1 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-                    Tampilkan QR Code
-                  </button>
-                </>
-              )}
+        <div className="p-4">
+          {isEditingConfig ? (
+            <div className="space-y-3">
+               <div className="text-xs text-slate-600">
+                 Paste URL Web App dari Google Apps Script Deployment di bawah ini.
+               </div>
+               <input 
+                type="text" 
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                placeholder="https://script.google.com/macros/s/..."
+                className="w-full text-sm p-2 border rounded focus:ring-2 focus:ring-orange-500 outline-none transition"
+               />
+               <div className="flex gap-2 justify-end">
+                 <button onClick={() => setIsEditingConfig(false)} className="text-slate-600 text-sm px-4 py-2 hover:bg-slate-100 rounded-lg">Batal</button>
+                 <button onClick={handleSaveConfig} className="bg-orange-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-orange-700 shadow">Simpan</button>
+               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="space-y-4">
+               <div className="flex items-center gap-2 p-2 bg-slate-50 rounded border border-slate-100">
+                  <div className={`w-3 h-3 rounded-full shadow-sm ${configUrl ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                  <div className="text-sm font-medium text-slate-700 flex-1">{configUrl ? 'Terhubung ke Google Sheet' : 'Mode Demo (Lokal Storage)'}</div>
+                  <button onClick={() => { setUrlInput(configUrl); setIsEditingConfig(true); }} className="text-xs bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 text-slate-600">
+                    Ubah
+                  </button>
+               </div>
+               
+              <div className="flex flex-wrap gap-2">
+                {configUrl && (
+                  <>
+                    <button onClick={copyShareLink} className="flex-1 bg-blue-50 text-blue-700 font-medium text-xs hover:bg-blue-100 border border-blue-200 px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 transition">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                      Copy Link App
+                    </button>
+                    <button onClick={() => setShowQR(true)} className="flex-1 bg-slate-800 text-white font-medium text-xs hover:bg-slate-900 border border-slate-800 px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 shadow transition">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                      QR Code
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="mt-8 border-t pt-8">
-        <button onClick={handleWipeData} disabled={wiping} className="text-xs text-red-400 hover:text-red-600">
-          {wiping ? 'Menghapus...' : 'Reset Database'}
-        </button>
+      {/* DANGER ZONE: WIPE DATA */}
+      <div className="mt-8 border border-red-200 rounded-xl overflow-hidden bg-red-50/50">
+        <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-2">
+           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+           <h3 className="font-bold text-red-800 text-sm">Danger Zone</h3>
+        </div>
+        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+           <div className="text-xs text-red-700/80">
+              <p className="font-bold text-red-800">Reset Database</p>
+              <p className="mt-1">Tindakan ini akan menghapus <strong>SEMUA DATA</strong> member secara permanen dari aplikasi dan {configUrl ? 'Google Sheet' : 'Local Storage'}. Tidak dapat dibatalkan.</p>
+           </div>
+           <button 
+             onClick={handleWipeData} 
+             disabled={wiping} 
+             className="whitespace-nowrap bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+           >
+             {wiping ? 'Menghapus...' : 'HAPUS SEMUA DATA'}
+           </button>
+        </div>
       </div>
 
       {/* QR CODE MODAL */}
       {showQR && configUrl && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
-          <div className="bg-white p-6 rounded-xl max-w-sm w-full text-center space-y-6 animate-fade-in" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowQR(false)}>
+          <div className="bg-white p-8 rounded-2xl max-w-sm w-full text-center space-y-6 animate-fade-in shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="space-y-2">
               <h3 className="font-bold text-xl text-slate-800">Scan untuk Registrasi</h3>
-              <div className="bg-green-50 text-green-700 text-xs p-2 rounded border border-green-200">
-                 <strong>QR Code Terintegrasi</strong><br/>
+              <div className="bg-green-50 text-green-700 text-xs p-3 rounded-lg border border-green-200">
+                 <strong className="block mb-1">🚀 QR Code Terintegrasi</strong>
                  Member yang scan QR ini akan otomatis terhubung ke database tanpa perlu setting manual.
               </div>
             </div>
             
-            <div className="flex justify-center bg-white p-2">
-               <div className="border-4 border-slate-900 p-2 rounded-lg bg-white shadow-lg">
+            <div className="flex justify-center">
+               <div className="border-4 border-slate-900 p-3 rounded-xl bg-white shadow-xl">
                  <QRCode value={getShareUrl()} size={220} />
                </div>
             </div>
             
             <button 
               onClick={() => setShowQR(false)} 
-              className="w-full bg-slate-900 text-white font-medium py-3 rounded-lg hover:bg-slate-800"
+              className="w-full bg-slate-900 text-white font-medium py-3 rounded-xl hover:bg-slate-800 transition shadow-lg"
             >
               Tutup
             </button>
@@ -618,28 +657,36 @@ const StepLogin = ({ onLogin }: { onLogin: (wa: string, nickname: string) => voi
   };
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-slate-800">Selamat Datang</h2>
-        <p className="text-slate-500">Silakan lengkapi data awal untuk memulai proses registrasi.</p>
+    <div className="animate-fade-in space-y-8 py-4">
+      <div className="text-center space-y-3">
+        <div className="inline-block p-3 bg-orange-100 rounded-full mb-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Selamat Datang</h2>
+        <p className="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">
+          Silakan lengkapi data awal untuk memulai proses registrasi ulang member Pushbike Kudus.
+        </p>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Nomor WhatsApp</label>
-          <input
-            type="tel"
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
-            placeholder="08123456789"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-            required
-          />
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Nomor WhatsApp</label>
+          <div className="relative">
+             <span className="absolute left-4 top-3.5 text-slate-400 text-sm font-medium">+62</span>
+             <input
+              type="tel"
+              className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition font-medium"
+              placeholder="8123456789"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+              required
+            />
+          </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Nama Panggilan Anak</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Nama Panggilan Anak</label>
           <input
             type="text"
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition uppercase placeholder:normal-case"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition font-medium uppercase placeholder:normal-case placeholder:text-slate-400"
             placeholder="Contoh: BUDI"
             value={nickname}
             onChange={(e) => setNickname(e.target.value.toUpperCase())}
@@ -649,9 +696,9 @@ const StepLogin = ({ onLogin }: { onLogin: (wa: string, nickname: string) => voi
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-slate-900 text-white font-semibold py-3 rounded-lg hover:bg-slate-800 transition disabled:opacity-50"
+          className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-slate-200 mt-2"
         >
-          {loading ? 'Memuat...' : 'Lanjut'}
+          {loading ? 'Memproses...' : 'Lanjutkan Registrasi'}
         </button>
       </form>
     </div>
@@ -672,56 +719,71 @@ const StepPayment = ({ member, onConfirm }: { member: MemberData, onConfirm: (me
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex bg-slate-100 rounded-lg p-1">
+      <div className="text-center">
+         <h3 className="text-lg font-bold text-slate-800">Pilih Metode Pembayaran</h3>
+         <p className="text-sm text-slate-500">Silakan pilih cara pembayaran registrasi.</p>
+      </div>
+      
+      <div className="flex bg-slate-100 p-1.5 rounded-xl">
         <button 
           onClick={() => setMethod('TRANSFER')}
-          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${method === 'TRANSFER' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${method === 'TRANSFER' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
           Transfer Bank
         </button>
         <button 
           onClick={() => setMethod('CASH')}
-          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${method === 'CASH' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${method === 'CASH' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
           Tunai (Cash)
         </button>
       </div>
 
-      <div className={`${method === 'TRANSFER' ? 'bg-orange-50 border-orange-200' : 'bg-emerald-50 border-emerald-200'} border rounded-xl p-6 text-center space-y-4 transition-colors`}>
-        <h3 className={`font-semibold ${method === 'TRANSFER' ? 'text-orange-800' : 'text-emerald-800'}`}>
-          {method === 'TRANSFER' ? 'Detail Pembayaran' : 'Pembayaran Tunai'}
-        </h3>
+      <div className={`relative overflow-hidden ${method === 'TRANSFER' ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200' : 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200'} border rounded-2xl p-6 text-center space-y-4 transition-all shadow-sm`}>
         
         {method === 'TRANSFER' ? (
            <>
-             <p className="text-sm text-orange-700">Silakan transfer dengan nominal TEPAT hingga 2 digit terakhir untuk verifikasi otomatis.</p>
-             <div className="py-4">
-                <div className="text-sm text-slate-500">Total Transfer</div>
-                <div className="text-3xl font-mono font-bold text-slate-900 tracking-tight">
-                  Rp {transferAmount.toLocaleString('id-ID')}
-                </div>
-                <div className="text-xs text-slate-400 mt-1">Kode Unik: {member.paymentCode}</div>
+             <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg inline-block">
+                <p className="text-xs font-bold text-orange-700 uppercase tracking-wide">Total Transfer</p>
              </div>
-             <div className="bg-white p-3 rounded-lg border text-sm text-slate-600">
-               <p className="font-semibold">{BANK_INFO.bankName}</p>
-               <p className="text-lg tracking-wide">{BANK_INFO.accountNumber}</p>
-               <p>{BANK_INFO.accountHolder}</p>
+             <div className="py-2">
+                <div className="text-4xl font-mono font-bold text-slate-800 tracking-tighter">
+                  <span className="text-xl align-top text-slate-500 font-sans mr-1">Rp</span>
+                  {transferAmount.toLocaleString('id-ID')}
+                </div>
+                <div className="inline-block mt-2 px-2 py-1 bg-orange-200/50 text-orange-800 text-[10px] font-bold rounded">
+                  Kode Unik: {member.paymentCode}
+                </div>
+             </div>
+             <p className="text-xs text-orange-800/80 leading-relaxed px-4">
+               Mohon transfer <strong>sesuai nominal persis</strong> (hingga 3 digit terakhir) agar sistem dapat memverifikasi otomatis.
+             </p>
+             <div className="bg-white p-4 rounded-xl border border-orange-100 text-sm text-slate-600 shadow-sm">
+               <p className="font-bold text-slate-800 mb-1">{BANK_INFO.bankName}</p>
+               <p className="text-xl font-mono tracking-wider text-slate-800 select-all bg-slate-50 py-2 rounded mb-1">{BANK_INFO.accountNumber}</p>
+               <p className="text-xs text-slate-400">{BANK_INFO.accountHolder}</p>
              </div>
            </>
         ) : (
            <>
-             <p className="text-sm text-emerald-700">Pembayaran tunai dilakukan secara langsung saat bertemu tim membership.</p>
-             <div className="py-4">
-                <div className="text-sm text-slate-500">Total Tagihan</div>
-                <div className="text-3xl font-mono font-bold text-slate-900 tracking-tight">
-                  Rp 200.000
-                </div>
-                <div className="text-xs text-emerald-600 font-medium mt-1">Tanpa kode unik</div>
+             <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg inline-block">
+                <p className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Total Tagihan</p>
              </div>
-             <div className="bg-white p-4 rounded-lg border border-emerald-100 text-sm text-slate-600 flex items-start gap-2 text-left">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-               <p>
-                 Wajib menyerahkan uang tunai saat <strong>Latihan/Kopdar</strong> kepada Bendahara/Admin.
+             <div className="py-2">
+                <div className="text-4xl font-mono font-bold text-slate-800 tracking-tighter">
+                  <span className="text-xl align-top text-slate-500 font-sans mr-1">Rp</span>
+                  200.000
+                </div>
+                <div className="inline-block mt-2 px-2 py-1 bg-emerald-200/50 text-emerald-800 text-[10px] font-bold rounded">
+                  Tanpa Kode Unik
+                </div>
+             </div>
+             <div className="bg-white p-5 rounded-xl border border-emerald-100 text-sm text-slate-600 flex items-start gap-3 text-left shadow-sm">
+               <div className="bg-emerald-100 p-2 rounded-full text-emerald-600 shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+               </div>
+               <p className="text-slate-600 text-xs leading-relaxed">
+                 Wajib menyerahkan uang tunai saat <strong>Latihan/Kopdar</strong> secara langsung kepada Bendahara atau Admin yang bertugas.
                </p>
              </div>
            </>
@@ -731,13 +793,13 @@ const StepPayment = ({ member, onConfirm }: { member: MemberData, onConfirm: (me
       <button
         onClick={handleConfirm}
         disabled={loading}
-        className={`w-full text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 shadow-md ${method === 'TRANSFER' ? 'bg-green-600 hover:bg-green-700 shadow-green-200' : 'bg-slate-800 hover:bg-slate-900 shadow-slate-200'}`}
+        className={`w-full text-white font-bold py-4 rounded-xl transition-all transform active:scale-95 disabled:opacity-50 shadow-lg ${method === 'TRANSFER' ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-200' : 'bg-slate-800 hover:bg-slate-900 shadow-slate-200'}`}
       >
         {loading ? 'Memproses...' : (method === 'TRANSFER' ? 'Saya Sudah Transfer' : 'Saya Akan Bayar Tunai')}
       </button>
       
       {method === 'TRANSFER' && (
-        <p className="text-center text-xs text-slate-400">Tidak perlu upload bukti transfer</p>
+        <p className="text-center text-[10px] text-slate-400 uppercase tracking-wide">Tidak perlu upload bukti transfer</p>
       )}
     </div>
   );
@@ -754,24 +816,27 @@ const StepWaitingApproval = ({ onCheckStatus }: { onCheckStatus: () => void }) =
   }, [onCheckStatus]);
 
   return (
-    <div className="animate-fade-in text-center space-y-6 py-8">
-      <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto text-yellow-600 relative">
-        <div className="absolute inset-0 rounded-full border-4 border-yellow-200 animate-ping opacity-25"></div>
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+    <div className="animate-fade-in text-center space-y-8 py-10">
+      <div className="relative w-24 h-24 mx-auto">
+         <div className="absolute inset-0 bg-yellow-100 rounded-full animate-ping opacity-75"></div>
+         <div className="relative w-24 h-24 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-full flex items-center justify-center text-yellow-600 shadow-inner border border-yellow-200">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+         </div>
       </div>
-      <div className="space-y-2">
-        <h2 className="text-xl font-bold text-slate-800">Menunggu Verifikasi</h2>
-        <p className="text-slate-600">
-          Tim kami sedang mengecek status pembayaran Anda.<br/>
-          Halaman ini akan otomatis berubah setelah disetujui.
+      
+      <div className="space-y-3">
+        <h2 className="text-2xl font-bold text-slate-800">Menunggu Verifikasi</h2>
+        <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
+          Terima kasih! Tim kami sedang mengecek status pembayaran Anda. Halaman ini akan otomatis berubah setelah disetujui.
         </p>
       </div>
+      
       <div className="flex justify-center">
         <button
           onClick={onCheckStatus}
-          className="flex items-center gap-2 text-orange-600 font-medium hover:text-orange-700 text-sm bg-orange-50 px-4 py-2 rounded-full"
+          className="flex items-center gap-2 text-orange-600 font-bold hover:text-orange-700 text-xs bg-orange-50 px-5 py-2.5 rounded-full border border-orange-100 hover:bg-orange-100 transition"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           Cek Status Sekarang
@@ -824,99 +889,112 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
   };
 
   return (
-    <form onSubmit={handleSubmit} className="animate-fade-in space-y-6">
-      <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-6">
-        ✅ Pembayaran telah diverifikasi. Silakan lengkapi data anak di bawah ini.
+    <form onSubmit={handleSubmit} className="animate-fade-in space-y-8">
+      <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 px-4 py-4 rounded-xl text-sm flex gap-3 items-start shadow-sm">
+        <div className="bg-emerald-100 p-1 rounded-full shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div>
+          <strong>Pembayaran Terverifikasi!</strong>
+          <p className="text-emerald-600/80 text-xs mt-1">Silakan lengkapi biodata anak dengan benar untuk pencetakan ID Card.</p>
+        </div>
       </div>
       
       {/* SECTION: CHILD DATA */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-800 border-b pb-2">Data Diri Anak</h2>
+        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Data Diri Anak</h2>
         
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">Nama Lengkap Anak</label>
-          <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase placeholder:normal-case" 
+          <label className="text-sm font-semibold text-slate-700 block mb-1.5">Nama Lengkap Anak</label>
+          <input required type="text" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none uppercase placeholder:normal-case transition" 
             placeholder="CONTOH: BUDI SANTOSO"
             value={formData.fullName} onChange={e => handleChange('fullName', e.target.value)} />
         </div>
         
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">Nama Panggilan</label>
-          <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase placeholder:normal-case" 
+          <label className="text-sm font-semibold text-slate-700 block mb-1.5">Nama Panggilan</label>
+          <input required type="text" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none uppercase placeholder:normal-case transition" 
             placeholder="BUDI"
             value={formData.nickname} onChange={e => handleChange('nickname', e.target.value)} />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1">Tahun Lahir</label>
-            <select required className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
-              value={formData.birthYear} onChange={e => handleChange('birthYear', parseInt(e.target.value))}>
-              <option value="">Pilih</option>
-              {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
+            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Tahun Lahir</label>
+            <div className="relative">
+              <select required className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none appearance-none transition"
+                value={formData.birthYear} onChange={e => handleChange('birthYear', parseInt(e.target.value))}>
+                <option value="">Pilih</option>
+                {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <div className="absolute right-3 top-4 pointer-events-none text-slate-500">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1">Tanggal Lahir</label>
-            <input required type="date" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Tanggal Lahir</label>
+            <input required type="date" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none transition text-slate-600"
               value={formData.birthDate} onChange={e => handleChange('birthDate', e.target.value)} />
           </div>
         </div>
       </div>
 
       {/* SECTION: PARENT DATA */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-800 border-b pb-2 pt-2">Data Orang Tua</h2>
+      <div className="space-y-4 pt-2">
+        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Data Orang Tua</h2>
         <div className="grid gap-4">
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1">Nama Ayah</label>
-            <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase"
+            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Nama Ayah</label>
+            <input required type="text" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase transition"
               value={formData.fatherName} onChange={e => handleChange('fatherName', e.target.value)} />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1">Nama Ibu</label>
-            <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase"
+            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Nama Ibu</label>
+            <input required type="text" className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase transition"
               value={formData.motherName} onChange={e => handleChange('motherName', e.target.value)} />
           </div>
         </div>
       </div>
 
       {/* SECTION: ADDRESS */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-800 border-b pb-2 pt-2">Alamat</h2>
+      <div className="space-y-4 pt-2">
+        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Alamat</h2>
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">Alamat Sesuai KK</label>
-          <textarea required rows={2} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase"
+          <label className="text-sm font-semibold text-slate-700 block mb-1.5">Alamat Sesuai KK</label>
+          <textarea required rows={2} className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none uppercase transition"
             value={formData.addressKK} onChange={e => handleChange('addressKK', e.target.value)} />
         </div>
 
         <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="text-sm font-medium text-slate-700">Alamat Domisili</label>
-            <button type="button" onClick={toggleSameAddress} className="text-xs flex items-center text-orange-600 font-medium">
-              <span className={`w-4 h-4 border rounded mr-1 flex items-center justify-center ${sameAsKK ? 'bg-orange-600 border-orange-600' : 'border-slate-300'}`}>
-                {sameAsKK && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-sm font-semibold text-slate-700">Alamat Domisili</label>
+            <button type="button" onClick={toggleSameAddress} className="text-xs flex items-center text-orange-600 font-bold bg-orange-50 px-2 py-1 rounded-md border border-orange-100 hover:bg-orange-100 transition">
+              <span className={`w-3 h-3 border rounded-sm mr-1.5 flex items-center justify-center transition ${sameAsKK ? 'bg-orange-600 border-orange-600' : 'border-slate-400 bg-white'}`}>
+                {sameAsKK && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>}
               </span>
               Sama dengan KK
             </button>
           </div>
-          <textarea required rows={2} className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase ${sameAsKK ? 'bg-slate-100 text-slate-500' : ''}`}
+          <textarea required rows={2} className={`w-full p-3.5 border border-slate-200 rounded-xl outline-none uppercase transition ${sameAsKK ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500'}`}
             value={formData.addressDomicile} onChange={e => handleChange('addressDomicile', e.target.value)} readOnly={sameAsKK} />
         </div>
       </div>
 
       {/* SECTION: ATTRIBUTES */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-800 border-b pb-2 pt-2">Atribut</h2>
+      <div className="space-y-4 pt-2">
+        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Atribut</h2>
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">Ukuran Jersey</label>
-          <div className="flex flex-wrap gap-2">
+          <label className="text-sm font-semibold text-slate-700 block mb-2">Ukuran Jersey</label>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {Object.values(ShirtSize).map(size => (
               <button
                 key={size}
                 type="button"
                 onClick={() => handleChange('shirtSize', size)}
-                className={`px-4 py-2 rounded-md border text-sm font-medium transition ${formData.shirtSize === size ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                className={`px-2 py-3 rounded-lg border text-sm font-bold transition-all ${formData.shirtSize === size ? 'bg-slate-900 text-white border-slate-900 shadow-lg transform scale-105' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
               >
                 {size}
               </button>
@@ -928,7 +1006,7 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
       <button
         type="submit"
         disabled={loading}
-        className="w-full mt-6 bg-slate-900 text-white font-semibold py-4 rounded-lg hover:bg-slate-800 transition disabled:opacity-50 shadow-lg"
+        className="w-full mt-6 bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-all transform active:scale-95 disabled:opacity-50 shadow-xl shadow-slate-200"
       >
         {loading ? 'Menyimpan...' : 'Simpan Data'}
       </button>
@@ -938,32 +1016,34 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
 
 const StepSuccess = () => (
   <div className="animate-fade-in text-center space-y-6 py-10">
-    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 animate-bounce">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 shadow-lg shadow-green-100">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
       </svg>
     </div>
     <div>
-      <h2 className="text-2xl font-bold text-slate-800">Registrasi Berhasil!</h2>
-      <p className="text-slate-600 mt-2">Data Anda telah tersimpan di sistem kami.</p>
+      <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Registrasi Berhasil!</h2>
+      <p className="text-slate-500 mt-2 text-sm">Terima kasih, data Anda telah tersimpan aman di sistem kami.</p>
     </div>
 
     {/* WHATSAPP GROUP PLACEHOLDER */}
-    <div className="bg-green-50 border border-green-200 p-4 rounded-xl text-left space-y-3">
-        <div className="flex items-center gap-2 text-green-800 font-bold">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.696c1.029.575 1.943.865 3.053.865 3.183 0 5.768-2.586 5.769-5.766.001-3.182-2.585-5.767-5.766-5.767zm6.145 12.353l-.001.001a8.625 8.625 0 01-4.145.923c-1.396 0-2.588-.369-3.729-1.017l-3.32.871.884-3.238c-.733-1.185-1.139-2.382-1.139-3.832 0-3.669 3.992-7.653 7.653-7.653 4.22 0 7.654 3.434 7.654 7.653 0 2.652-1.383 5.045-3.857 6.292z"/></svg>
+    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 p-5 rounded-2xl text-left space-y-3 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-green-100 rounded-full opacity-50 blur-xl"></div>
+        <div className="flex items-center gap-2 text-green-800 font-bold text-lg relative z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.696c1.029.575 1.943.865 3.053.865 3.183 0 5.768-2.586 5.769-5.766.001-3.182-2.585-5.767-5.766-5.767zm6.145 12.353l-.001.001a8.625 8.625 0 01-4.145.923c-1.396 0-2.588-.369-3.729-1.017l-3.32.871.884-3.238c-.733-1.185-1.139-2.382-1.139-3.832 0-3.669 3.992-7.653 7.653-7.653 4.22 0 7.654 3.434 7.654 7.653 0 2.652-1.383 5.045-3.857 6.292z"/></svg>
             Grup WhatsApp Member
         </div>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 leading-relaxed relative z-10">
             Link undangan grup WhatsApp untuk member baru akan kami informasikan menyusul melalui pesan pribadi (Japri) atau saat latihan.
         </p>
-        <button disabled className="w-full py-2 bg-slate-200 text-slate-400 font-semibold rounded-lg text-sm cursor-not-allowed">
+        <button disabled className="w-full py-3 bg-white/50 border border-green-200/50 text-slate-400 font-bold rounded-xl text-sm cursor-not-allowed flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             Link Menyusul
         </button>
     </div>
 
-    <div className="p-4 bg-slate-50 rounded-lg text-sm text-slate-500">
-      Terima kasih telah melakukan daftar ulang. Sampai jumpa di latihan berikutnya!
+    <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-500 font-medium">
+      Sampai jumpa di latihan berikutnya! 👋
     </div>
   </div>
 );
@@ -1034,7 +1114,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-20">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]">
       <Header currentView={viewMode} onViewChange={handleChangeView} />
       
       {/* Admin Login Modal */}
@@ -1047,13 +1127,13 @@ export default function App() {
         }}
       />
 
-      <main className="max-w-md mx-auto p-4 mt-6">
+      <main className="max-w-md mx-auto w-full p-4 mt-6 flex-1">
         {viewMode === 'admin' ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
             <AdminDashboard />
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 sm:p-8">
             {!member && (
               <StepLogin onLogin={handleLogin} />
             )}
@@ -1078,6 +1158,8 @@ export default function App() {
           </div>
         )}
       </main>
+
+      <Footer />
 
       {viewMode === 'user' && <GeminiChat />}
     </div>

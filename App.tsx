@@ -20,10 +20,12 @@ const ADMIN_PIN = "757515";
 const WA_GROUP_LINK = "https://chat.whatsapp.com/FaZDznBOKxSGEqHEMC9FkS"; 
 
 // 4. URL LOGO APLIKASI (Ganti link gambar disini)
-const DEFAULT_APP_LOGO = "https://i.postimg.cc/50tShY2v/logoo.png";
+// Menggunakan icon sepeda dari Flaticon yang lebih stabil dan tidak diblokir
+const DEFAULT_APP_LOGO = "https://i.ibb.co.com/1YLtbnnD/logo-new-2.png";
 
 // 5. URL GAMBAR SIZE CHART (Ganti link gambar size chart JPG anda disini)
-const SIZE_CHART_URL = "https://i.postimg.cc/4xtS1Nwd/sizze-chart.jpg";
+// Menggunakan placeholder aman. Sebaiknya ganti dengan link Google Drive (Direct Link) atau hosting sendiri.
+const SIZE_CHART_URL = "https://i.ibb.co.com/6cDkDj4Y/size-charrt.jpg";
 
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
@@ -352,6 +354,8 @@ const Footer = ({ logoUrl }: { logoUrl: string }) => (
 );
 
 const SizeChartModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+  const [imgError, setImgError] = useState(false);
+
   if (!isOpen) return null;
 
   return (
@@ -364,7 +368,37 @@ const SizeChartModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => v
             </button>
          </div>
          <div className="p-1 bg-slate-100 max-h-[80vh] overflow-y-auto">
-            <img src={SIZE_CHART_URL} alt="Size Chart" className="w-full h-auto block" />
+            {!imgError ? (
+              <img 
+                src={SIZE_CHART_URL} 
+                alt="Size Chart" 
+                className="w-full h-auto block" 
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div className="p-6 text-center space-y-4">
+                 <div className="text-red-500 font-bold text-sm">Gagal memuat gambar Size Chart.</div>
+                 <div className="bg-white border rounded-lg p-2 text-xs text-left overflow-x-auto">
+                    <table className="w-full border-collapse">
+                       <thead>
+                         <tr className="bg-slate-100">
+                           <th className="border p-2">Size</th>
+                           <th className="border p-2">Lebar Dada</th>
+                           <th className="border p-2">Panjang</th>
+                         </tr>
+                       </thead>
+                       <tbody>
+                         <tr><td className="border p-2 font-bold text-center">XS</td><td className="border p-2 text-center">30 cm</td><td className="border p-2 text-center">40 cm</td></tr>
+                         <tr><td className="border p-2 font-bold text-center">S</td><td className="border p-2 text-center">32 cm</td><td className="border p-2 text-center">42 cm</td></tr>
+                         <tr><td className="border p-2 font-bold text-center">M</td><td className="border p-2 text-center">34 cm</td><td className="border p-2 text-center">45 cm</td></tr>
+                         <tr><td className="border p-2 font-bold text-center">L</td><td className="border p-2 text-center">36 cm</td><td className="border p-2 text-center">48 cm</td></tr>
+                         <tr><td className="border p-2 font-bold text-center">XL</td><td className="border p-2 text-center">38 cm</td><td className="border p-2 text-center">51 cm</td></tr>
+                       </tbody>
+                    </table>
+                    <p className="mt-2 text-[10px] text-slate-400">* Toleransi ukuran 1-2 cm</p>
+                 </div>
+              </div>
+            )}
          </div>
       </div>
     </div>

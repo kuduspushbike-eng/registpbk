@@ -25,10 +25,10 @@ export const askGeminiAssistant = async (question: string): Promise<string> => {
         Tugas anda membantu orang tua mendaftarkan anak mereka.
         
         Informasi penting:
-        - Biaya registrasi: Rp 200.000 + kode unik (2 digit).
+        - Biaya registrasi: Rp 200.000 + kode unik (2 digit) atau tunai saat latihan.
         - Tahun kelahiran yang diterima: 2017 sampai 2024.
         - Data yang dibutuhkan: Nama anak, nama panggilan, tanggal lahir, nama ayah, nama ibu, alamat KK dan domisili, serta ukuran baju.
-        - Ukuran baju tersedia: XS, S, M, L, XL, XXL.
+        - Ukuran baju tersedia: XS, S, M, L, XL.
         - Alamat domisili bisa disamakan dengan KK.
         - Setelah transfer, tidak perlu upload bukti, cukup klik konfirmasi.
         - Tunggu admin approve baru bisa isi formulir.

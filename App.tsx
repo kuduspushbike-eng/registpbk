@@ -14,7 +14,7 @@ const BANK_INFO = {
 };
 
 // 2. PIN UNTUK MASUK HALAMAN ADMIN
-const ADMIN_PIN = "123456"; 
+const ADMIN_PIN = "757515"; 
 
 // 3. LINK GRUP WHATSAPP (Isi link di dalam tanda kutip, kosongkan jika belum ada)
 const WA_GROUP_LINK = "https://chat.whatsapp.com/FaZDznBOKxSGEqHEMC9FkS"; 

@@ -16,6 +16,9 @@ const BANK_INFO = {
 // 2. PIN UNTUK MASUK HALAMAN ADMIN
 const ADMIN_PIN = "123456"; 
 
+// 3. LINK GRUP WHATSAPP (Isi link di dalam tanda kutip, kosongkan jika belum ada)
+const WA_GROUP_LINK = ""; // Contoh: "https://chat.whatsapp.com/ABCDE12345"
+
 // --- GOOGLE APPS SCRIPT CODE TEMPLATE ---
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
@@ -1027,19 +1030,35 @@ const StepSuccess = () => (
     </div>
 
     {/* WHATSAPP GROUP PLACEHOLDER */}
-    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 p-5 rounded-2xl text-left space-y-3 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-green-100 rounded-full opacity-50 blur-xl"></div>
-        <div className="flex items-center gap-2 text-green-800 font-bold text-lg relative z-10">
+    <div className={`bg-gradient-to-br ${WA_GROUP_LINK ? 'from-green-50 to-green-100 border-green-200' : 'from-slate-50 to-slate-100 border-slate-200'} border p-5 rounded-2xl text-left space-y-3 shadow-sm relative overflow-hidden`}>
+        <div className={`absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 ${WA_GROUP_LINK ? 'bg-green-200' : 'bg-slate-200'} rounded-full opacity-50 blur-xl`}></div>
+        <div className={`flex items-center gap-2 ${WA_GROUP_LINK ? 'text-green-800' : 'text-slate-700'} font-bold text-lg relative z-10`}>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.696c1.029.575 1.943.865 3.053.865 3.183 0 5.768-2.586 5.769-5.766.001-3.182-2.585-5.767-5.766-5.767zm6.145 12.353l-.001.001a8.625 8.625 0 01-4.145.923c-1.396 0-2.588-.369-3.729-1.017l-3.32.871.884-3.238c-.733-1.185-1.139-2.382-1.139-3.832 0-3.669 3.992-7.653 7.653-7.653 4.22 0 7.654 3.434 7.654 7.653 0 2.652-1.383 5.045-3.857 6.292z"/></svg>
             Grup WhatsApp Member
         </div>
+        
         <p className="text-sm text-slate-600 leading-relaxed relative z-10">
-            Link undangan grup WhatsApp untuk member baru akan kami informasikan menyusul melalui pesan pribadi (Japri) atau saat latihan.
+           {WA_GROUP_LINK 
+             ? "Silakan bergabung ke grup WhatsApp member untuk mendapatkan informasi jadwal latihan dan event terbaru."
+             : "Link undangan grup WhatsApp untuk member baru akan kami informasikan menyusul melalui pesan pribadi (Japri) atau saat latihan."}
         </p>
-        <button disabled className="w-full py-3 bg-white/50 border border-green-200/50 text-slate-400 font-bold rounded-xl text-sm cursor-not-allowed flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            Link Menyusul
-        </button>
+
+        {WA_GROUP_LINK ? (
+           <a 
+             href={WA_GROUP_LINK}
+             target="_blank"
+             rel="noopener noreferrer"
+             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-transform active:scale-95"
+           >
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+             Gabung Grup Sekarang
+           </a>
+        ) : (
+           <button disabled className="w-full py-3 bg-white/50 border border-slate-300 text-slate-400 font-bold rounded-xl text-sm cursor-not-allowed flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Link Menyusul
+           </button>
+        )}
     </div>
 
     <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-500 font-medium">

@@ -781,10 +781,13 @@ const StepForm = ({ onSubmit }: { onSubmit: (data: Partial<MemberData>) => void 
   const [loading, setLoading] = useState(false);
 
   const handleChange = (field: string, value: any) => {
+    // AUTO KAPITAL (UPPERCASE)
+    const finalValue = typeof value === 'string' ? value.toUpperCase() : value;
+
     setFormData(prev => {
-      const newData = { ...prev, [field]: value };
+      const newData = { ...prev, [field]: finalValue };
       if (field === 'addressKK' && sameAsKK) {
-        newData.addressDomicile = value;
+        newData.addressDomicile = finalValue;
       }
       return newData;
     });
@@ -816,13 +819,15 @@ const StepForm = ({ onSubmit }: { onSubmit: (data: Partial<MemberData>) => void 
         
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-1">Nama Lengkap Anak</label>
-          <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+          <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase placeholder:normal-case" 
+            placeholder="CONTOH: BUDI SANTOSO"
             value={formData.fullName} onChange={e => handleChange('fullName', e.target.value)} />
         </div>
         
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-1">Nama Panggilan</label>
-          <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+          <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase placeholder:normal-case" 
+            placeholder="BUDI"
             value={formData.nickname} onChange={e => handleChange('nickname', e.target.value)} />
         </div>
 
@@ -849,12 +854,12 @@ const StepForm = ({ onSubmit }: { onSubmit: (data: Partial<MemberData>) => void 
         <div className="grid gap-4">
           <div>
             <label className="text-sm font-medium text-slate-700 block mb-1">Nama Ayah</label>
-            <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+            <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase"
               value={formData.fatherName} onChange={e => handleChange('fatherName', e.target.value)} />
           </div>
           <div>
             <label className="text-sm font-medium text-slate-700 block mb-1">Nama Ibu</label>
-            <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+            <input required type="text" className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase"
               value={formData.motherName} onChange={e => handleChange('motherName', e.target.value)} />
           </div>
         </div>
@@ -865,7 +870,7 @@ const StepForm = ({ onSubmit }: { onSubmit: (data: Partial<MemberData>) => void 
         <h2 className="text-lg font-bold text-slate-800 border-b pb-2 pt-2">Alamat</h2>
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-1">Alamat Sesuai KK</label>
-          <textarea required rows={2} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+          <textarea required rows={2} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase"
             value={formData.addressKK} onChange={e => handleChange('addressKK', e.target.value)} />
         </div>
 
@@ -879,7 +884,7 @@ const StepForm = ({ onSubmit }: { onSubmit: (data: Partial<MemberData>) => void 
               Sama dengan KK
             </button>
           </div>
-          <textarea required rows={2} className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none ${sameAsKK ? 'bg-slate-100 text-slate-500' : ''}`}
+          <textarea required rows={2} className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase ${sameAsKK ? 'bg-slate-100 text-slate-500' : ''}`}
             value={formData.addressDomicile} onChange={e => handleChange('addressDomicile', e.target.value)} readOnly={sameAsKK} />
         </div>
       </div>
@@ -926,6 +931,21 @@ const StepSuccess = () => (
       <h2 className="text-2xl font-bold text-slate-800">Registrasi Berhasil!</h2>
       <p className="text-slate-600 mt-2">Data Anda telah tersimpan di sistem kami.</p>
     </div>
+
+    {/* WHATSAPP GROUP PLACEHOLDER */}
+    <div className="bg-green-50 border border-green-200 p-4 rounded-xl text-left space-y-3">
+        <div className="flex items-center gap-2 text-green-800 font-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.696c1.029.575 1.943.865 3.053.865 3.183 0 5.768-2.586 5.769-5.766.001-3.182-2.585-5.767-5.766-5.767zm6.145 12.353l-.001.001a8.625 8.625 0 01-4.145.923c-1.396 0-2.588-.369-3.729-1.017l-3.32.871.884-3.238c-.733-1.185-1.139-2.382-1.139-3.832 0-3.669 3.992-7.653 7.653-7.653 4.22 0 7.654 3.434 7.654 7.653 0 2.652-1.383 5.045-3.857 6.292z"/></svg>
+            Grup WhatsApp Member
+        </div>
+        <p className="text-sm text-slate-600">
+            Link undangan grup WhatsApp untuk member baru akan kami informasikan menyusul melalui pesan pribadi (Japri) atau saat latihan.
+        </p>
+        <button disabled className="w-full py-2 bg-slate-200 text-slate-400 font-semibold rounded-lg text-sm cursor-not-allowed">
+            Link Menyusul
+        </button>
+    </div>
+
     <div className="p-4 bg-slate-50 rounded-lg text-sm text-slate-500">
       Terima kasih telah melakukan daftar ulang. Sampai jumpa di latihan berikutnya!
     </div>

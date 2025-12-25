@@ -17,7 +17,7 @@ const BANK_INFO = {
 const ADMIN_PIN = "123456"; 
 
 // 3. LINK GRUP WHATSAPP (Isi link di dalam tanda kutip, kosongkan jika belum ada)
-const WA_GROUP_LINK = "https://chat.whatsapp.com/L3MVbYUKRnIEyfbCQJrrwP"; // Contoh: "https://chat.whatsapp.com/ABCDE12345"
+const WA_GROUP_LINK = "https://chat.whatsapp.com/FaZDznBOKxSGEqHEMC9FkS"; // Contoh: "https://chat.whatsapp.com/ABCDE12345"
 
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 

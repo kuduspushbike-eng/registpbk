@@ -44,7 +44,7 @@ function doPost(e) {
     var sheet = ss.getSheetByName("MemberData");
     if (!sheet) {
       sheet = ss.insertSheet("MemberData");
-      sheet.appendRow(["Timestamp", "WhatsApp", "Status", "PaymentAmount", "PaymentCode", "PaymentMethod", "FullName", "Nickname", "BirthYear", "BirthDate", "FatherName", "MotherName", "AddressKK", "AddressDomicile", "ShirtSize"]);
+      sheet.appendRow(["Timestamp", "WhatsApp", "Status", "PaymentAmount", "PaymentCode", "PaymentMethod", "FullName", "Nickname", "BirthYear", "BirthDate", "FatherName", "MotherName", "AddressKK", "AddressDomicile", "ShirtSize", "Gender"]);
     }
     
     var params = JSON.parse(e.postData.contents);
@@ -63,7 +63,7 @@ function doPost(e) {
       result = handleSubmitRegistration(sheet, params);
     } else if (action == "wipe_all") {
       sheet.clearContents();
-      sheet.appendRow(["Timestamp", "WhatsApp", "Status", "PaymentAmount", "PaymentCode", "PaymentMethod", "FullName", "Nickname", "BirthYear", "BirthDate", "FatherName", "MotherName", "AddressKK", "AddressDomicile", "ShirtSize"]);
+      sheet.appendRow(["Timestamp", "WhatsApp", "Status", "PaymentAmount", "PaymentCode", "PaymentMethod", "FullName", "Nickname", "BirthYear", "BirthDate", "FatherName", "MotherName", "AddressKK", "AddressDomicile", "ShirtSize", "Gender"]);
       result = {success: true};
     }
     
@@ -98,11 +98,12 @@ function handleCheckStatus(sheet, params) {
     var randomCode = Math.floor(Math.random() * 90 + 10);
     var amount = 200000 + randomCode;
     // Column H (index 7) is Nickname
-    var newRow = [new Date(), wa, "NEW", amount, randomCode, "", "", nickname, "", "", "", "", "", "", ""];
+    // Columns: 15 cols initially, now 16 with Gender
+    var newRow = [new Date(), wa, "NEW", amount, randomCode, "", "", nickname, "", "", "", "", "", "", "", ""];
     sheet.appendRow(newRow);
     return rowToMember(newRow);
   } else {
-    var row = sheet.getRange(rowIndex, 1, 1, 15).getValues()[0];
+    var row = sheet.getRange(rowIndex, 1, 1, 16).getValues()[0];
     return rowToMember(row);
   }
 }
@@ -120,7 +121,7 @@ function handleConfirmPayment(sheet, params) {
      sheet.getRange(rowIndex, 4).setValue(200000);
   }
   
-  var row = sheet.getRange(rowIndex, 1, 1, 15).getValues()[0];
+  var row = sheet.getRange(rowIndex, 1, 1, 16).getValues()[0];
   return rowToMember(row);
 }
 
@@ -130,7 +131,7 @@ function handleAdminApprove(sheet, params) {
   if (rowIndex == -1) throw "Member not found";
   
   sheet.getRange(rowIndex, 3).setValue("APPROVED");
-  var row = sheet.getRange(rowIndex, 1, 1, 15).getValues()[0];
+  var row = sheet.getRange(rowIndex, 1, 1, 16).getValues()[0];
   return rowToMember(row);
 }
 
@@ -140,7 +141,7 @@ function handleSubmitRegistration(sheet, params) {
   var rowIndex = findRowIndex(sheet, wa);
   if (rowIndex == -1) throw "Member not found";
   
-  var range = sheet.getRange(rowIndex, 1, 1, 15);
+  var range = sheet.getRange(rowIndex, 1, 1, 16);
   sheet.getRange(rowIndex, 3).setValue("REGISTERED");
   
   if(data.fullName) sheet.getRange(rowIndex, 7).setValue(data.fullName);
@@ -152,6 +153,7 @@ function handleSubmitRegistration(sheet, params) {
   if(data.addressKK) sheet.getRange(rowIndex, 13).setValue(data.addressKK);
   if(data.addressDomicile) sheet.getRange(rowIndex, 14).setValue(data.addressDomicile);
   if(data.shirtSize) sheet.getRange(rowIndex, 15).setValue(data.shirtSize);
+  if(data.gender) sheet.getRange(rowIndex, 16).setValue(data.gender);
   
   var row = range.getValues()[0];
   return rowToMember(row);
@@ -182,7 +184,8 @@ function rowToMember(row) {
     motherName: row[11],
     addressKK: row[12],
     addressDomicile: row[13],
-    shirtSize: row[14]
+    shirtSize: row[14],
+    gender: row[15]
   };
 }
 `;
@@ -603,6 +606,12 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
                       <span className="text-slate-500">Lahir:</span>
                       <span className="font-medium text-slate-800">{m.birthYear}</span>
                     </p>
+                    {m.gender && (
+                      <p className="flex justify-between">
+                        <span className="text-slate-500">Gender:</span>
+                        <span className="font-medium text-slate-800">{m.gender}</span>
+                      </p>
+                    )}
                  </div>
               )}
 
@@ -838,6 +847,7 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
             value={nickname}
             onChange={(e) => setNickname(e.target.value.toUpperCase())}
             required
+            autoCapitalize="characters"
           />
         </div>
         <button
@@ -957,6 +967,7 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
   const [formData, setFormData] = useState<Partial<MemberData>>({
     fullName: initialData.fullName || '',
     nickname: initialData.nickname || '',
+    gender: initialData.gender || 'BOY',
     birthYear: initialData.birthYear || BIRTH_YEARS[0],
     birthDate: initialData.birthDate || '',
     fatherName: initialData.fatherName || '',
@@ -976,7 +987,33 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
   }, [sameAddress, formData.addressKK]);
 
   const handleChange = (field: keyof MemberData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    let finalValue = value;
+    
+    // Force uppercase for text fields
+    if (typeof value === 'string' && field !== 'birthDate' && field !== 'shirtSize' && field !== 'gender') {
+        finalValue = value.toUpperCase();
+    }
+
+    // --- Sync Logic: Date Picker -> Dropdown ---
+    if (field === 'birthDate') {
+        const year = parseInt(value.split('-')[0]);
+        // If user picks a date, auto-select the corresponding year
+        if (!isNaN(year)) {
+           setFormData(prev => ({ ...prev, [field]: value, birthYear: year }));
+           return;
+        }
+    }
+
+    // --- Sync Logic: Dropdown -> Date Picker Constraints ---
+    if (field === 'birthYear') {
+        // If year changes, reset date to force re-selection within valid range 
+        // OR simply set year and let user fix the date. 
+        // Better UX: Clear date so they know they must pick again.
+        setFormData(prev => ({ ...prev, [field]: value, birthDate: '' }));
+        return;
+    }
+
+    setFormData(prev => ({ ...prev, [field]: finalValue }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -998,17 +1035,42 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
               
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap Anak</label>
-                <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                  value={formData.fullName} onChange={e => handleChange('fullName', e.target.value)} />
+                <input 
+                  type="text" 
+                  required 
+                  className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.fullName} 
+                  onChange={e => handleChange('fullName', e.target.value)} 
+                  autoCapitalize="characters"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Panggilan</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.nickname} 
+                  onChange={e => handleChange('nickname', e.target.value)} 
+                  autoCapitalize="characters"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Jenis Kelamin (Gender)</label>
+                <div className="grid grid-cols-2 gap-3">
+                     <button type="button" onClick={() => handleChange('gender', 'BOY')} className={`p-3 rounded-lg border flex items-center justify-center gap-2 transition ${formData.gender === 'BOY' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                        <span className="font-bold text-sm">BOYS</span>
+                     </button>
+                     <button type="button" onClick={() => handleChange('gender', 'GIRL')} className={`p-3 rounded-lg border flex items-center justify-center gap-2 transition ${formData.gender === 'GIRL' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                        <span className="font-bold text-sm">GIRLS</span>
+                     </button>
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Panggilan</label>
-                  <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase" 
-                    value={formData.nickname} onChange={e => handleChange('nickname', e.target.value.toUpperCase())} />
-                </div>
-                <div>
+                <div className="col-span-2">
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Tahun Lahir</label>
                   <select className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
                     value={formData.birthYear} onChange={e => handleChange('birthYear', Number(e.target.value))}>
@@ -1019,8 +1081,16 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Tanggal Lahir Lengkap</label>
-                <input type="date" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                  value={formData.birthDate} onChange={e => handleChange('birthDate', e.target.value)} />
+                <input 
+                  type="date" 
+                  required 
+                  className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  min={`${formData.birthYear}-01-01`}
+                  max={`${formData.birthYear}-12-31`}
+                  value={formData.birthDate} 
+                  onChange={e => handleChange('birthDate', e.target.value)} 
+                />
+                <p className="text-[10px] text-slate-400 mt-1">*Pastikan tahun sesuai dengan pilihan diatas</p>
               </div>
 
               <div>
@@ -1049,13 +1119,25 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
               
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ayah</label>
-                <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                  value={formData.fatherName} onChange={e => handleChange('fatherName', e.target.value)} />
+                <input 
+                  type="text" 
+                  required 
+                  className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.fatherName} 
+                  onChange={e => handleChange('fatherName', e.target.value)} 
+                  autoCapitalize="characters"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ibu</label>
-                <input type="text" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                  value={formData.motherName} onChange={e => handleChange('motherName', e.target.value)} />
+                <input 
+                  type="text" 
+                  required 
+                  className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.motherName} 
+                  onChange={e => handleChange('motherName', e.target.value)} 
+                  autoCapitalize="characters"
+                />
               </div>
           </div>
 
@@ -1064,8 +1146,14 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
               
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat Sesuai KK</label>
-                <textarea required rows={2} className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                  value={formData.addressKK} onChange={e => handleChange('addressKK', e.target.value)}></textarea>
+                <textarea 
+                  required 
+                  rows={2} 
+                  className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.addressKK} 
+                  onChange={e => handleChange('addressKK', e.target.value)}
+                  autoCapitalize="characters"
+                ></textarea>
               </div>
 
               <div className="flex items-center gap-2 py-1">
@@ -1077,8 +1165,14 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
               {!sameAddress && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat Domisili</label>
-                  <textarea required rows={2} className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                    value={formData.addressDomicile} onChange={e => handleChange('addressDomicile', e.target.value)}></textarea>
+                  <textarea 
+                    required 
+                    rows={2} 
+                    className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                    value={formData.addressDomicile} 
+                    onChange={e => handleChange('addressDomicile', e.target.value)}
+                    autoCapitalize="characters"
+                  ></textarea>
                 </div>
               )}
           </div>
@@ -1238,26 +1332,44 @@ const App = () => {
                             </div>
                             <div>
                                 <p className="text-xs text-slate-500">Nama Lengkap</p>
-                                <p className="font-bold text-slate-800 text-lg">{member.fullName}</p>
+                                <p className="font-bold text-slate-800 text-lg uppercase">{member.fullName}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-slate-500">Panggilan</p>
-                                    <p className="font-bold text-slate-800 text-lg">{member.nickname}</p>
+                                    <p className="font-bold text-slate-800 text-lg uppercase">{member.nickname}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500">Ukuran</p>
                                     <p className="font-bold text-slate-800 text-lg">{member.shirtSize}</p>
                                 </div>
+                                {member.gender && (
+                                  <div className="col-span-2 border-t pt-2 mt-2">
+                                    <p className="text-xs text-slate-500">Gender</p>
+                                    <p className="font-bold text-slate-800 text-lg">{member.gender === 'BOY' ? 'BOYS' : 'GIRLS'}</p>
+                                  </div>
+                                )}
                             </div>
                         </div>
                         
                         {WA_GROUP_LINK && (
-                          <div className="pt-4">
-                             <a href={WA_GROUP_LINK} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition shadow-lg shadow-green-200">
-                               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-8.68-2.031-9.67-.272-.099-.47-.149-.643-.149-.174 0-.347 0-.496 0-.149 0-.397.05-.62.347-.223.297-.868.843-.868 2.056 0 1.213.892 2.38 1.016 2.529.124.149 1.734 2.648 4.202 3.714 2.468 1.066 2.468.71 2.914.66.446-.05 1.438-.595 1.636-1.166.198-.57.198-1.066.149-1.166z"/></svg>
-                               Gabung Grup WhatsApp
-                             </a>
+                          <div className="pt-4 px-2">
+                             <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-1 shadow-lg shadow-green-200 transform transition hover:scale-[1.02] cursor-pointer" onClick={() => window.open(WA_GROUP_LINK, '_blank')}>
+                               <div className="bg-white rounded-xl p-4 flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                      <div className="bg-green-100 p-2 rounded-full text-green-600">
+                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-8.68-2.031-9.67-.272-.099-.47-.149-.643-.149-.174 0-.347 0-.496 0-.149 0-.397.05-.62.347-.223.297-.868.843-.868 2.056 0 1.213.892 2.38 1.016 2.529.124.149 1.734 2.648 4.202 3.714 2.468 1.066 2.468.71 2.914.66.446-.05 1.438-.595 1.636-1.166.198-.57.198-1.066.149-1.166z"/></svg>
+                                      </div>
+                                      <div>
+                                         <p className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Langkah Terakhir</p>
+                                         <p className="font-bold text-slate-800 text-sm">Gabung Grup WhatsApp</p>
+                                      </div>
+                                  </div>
+                                  <div className="bg-green-50 text-green-700 p-2 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                  </div>
+                               </div>
+                             </div>
                           </div>
                         )}
 

@@ -25,6 +25,7 @@ export interface MemberData {
   paymentMethod?: PaymentMethod; // Track selected method
   fullName?: string;
   nickname?: string;
+  gender?: 'BOY' | 'GIRL';
   birthYear?: number;
   birthDate?: string;
   fatherName?: string;

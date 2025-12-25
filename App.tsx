@@ -34,7 +34,7 @@ const MONTHS = [
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v2 (Added Gender support)
+// Versi: v3 (Fix Member Not Found - Robust Phone Matching)
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -98,11 +98,13 @@ function handleCheckStatus(sheet, params) {
   if (rowIndex == -1) {
     var randomCode = Math.floor(Math.random() * 90 + 10);
     var amount = 200000 + randomCode;
-    // Column H (index 7) is Nickname
-    // Columns: 15 cols initially, now 16 with Gender
-    var newRow = [new Date(), wa, "NEW", amount, randomCode, "", "", nickname, "", "", "", "", "", "", "", ""];
+    // Force string format for WhatsApp to prevent leading zero loss
+    var waString = "'" + wa; 
+    var newRow = [new Date(), waString, "NEW", amount, randomCode, "", "", nickname, "", "", "", "", "", "", "", ""];
     sheet.appendRow(newRow);
-    return rowToMember(newRow);
+    // Return the clean wa for frontend consistency
+    var createdRow = sheet.getRange(sheet.getLastRow(), 1, 1, 16).getValues()[0];
+    return rowToMember(createdRow);
   } else {
     var row = sheet.getRange(rowIndex, 1, 1, 16).getValues()[0];
     return rowToMember(row);
@@ -113,7 +115,7 @@ function handleConfirmPayment(sheet, params) {
   var wa = params.whatsapp;
   var method = params.method;
   var rowIndex = findRowIndex(sheet, wa);
-  if (rowIndex == -1) throw "Member not found";
+  if (rowIndex == -1) throw "Member not found (WA: " + wa + ")";
   
   sheet.getRange(rowIndex, 3).setValue("WAITING_APPROVAL");
   sheet.getRange(rowIndex, 6).setValue(method);
@@ -162,17 +164,28 @@ function handleSubmitRegistration(sheet, params) {
 
 function findRowIndex(sheet, wa) {
   var data = sheet.getDataRange().getValues();
+  var target = normalizePhone(wa);
+  
   for (var i = 1; i < data.length; i++) {
-    if (String(data[i][1]) == String(wa)) {
+    var current = normalizePhone(data[i][1]);
+    // Fuzzy match: if normalized phones match and are valid length
+    if (current == target && target.length > 5) {
       return i + 1;
     }
   }
   return -1;
 }
 
+function normalizePhone(phone) {
+  var p = String(phone).replace(/\\D/g, '');
+  if (p.startsWith('62')) return '0' + p.substring(2);
+  if (p.startsWith('8')) return '0' + p;
+  return p;
+}
+
 function rowToMember(row) {
   return {
-    whatsapp: String(row[1]),
+    whatsapp: String(row[1]).replace(/'/g, ''), // Remove leading ' if present
     status: row[2],
     paymentAmount: row[3],
     paymentCode: row[4],
@@ -356,7 +369,7 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
             <ol className="list-decimal ml-4 space-y-1">
               <li>Klik tombol <strong>Deploy</strong> (kanan atas) &gt; <strong>New Deployment</strong>.</li>
               <li>Pilih type: <strong>Web app</strong>.</li>
-              <li>Description: "v2".</li>
+              <li>Description: "v3".</li>
               <li>Execute as: <strong>Me</strong> (email anda).</li>
               <li>Who has access: <strong>Anyone</strong> (PENTING!).</li>
               <li>Klik <strong>Deploy</strong>, lalu salin <strong>Web App URL</strong>.</li>

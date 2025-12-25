@@ -446,14 +446,22 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
     onConfigUpdate(); // Update parent state
   };
 
-  // Logic untuk membuat URL Share yang mengandung Config
+  // Logic untuk membuat URL Share yang mengandung Config dan Logo
   const getShareUrl = () => {
     const baseUrl = window.location.href.split('?')[0];
+    const params = new URLSearchParams();
+    
     if (configUrl) {
-      // Encode URL Script agar bisa jadi parameter
-      return `${baseUrl}?config=${encodeURIComponent(configUrl)}`;
+      params.append('config', configUrl);
     }
-    return baseUrl;
+    
+    // Append logo only if it's not the default one to keep URL shorter
+    if (logoUrl && logoUrl !== SheetService.DEFAULT_LOGO) {
+      params.append('logo', logoUrl);
+    }
+    
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   };
 
   const copyShareLink = () => {
@@ -1011,10 +1019,20 @@ const App = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const config = params.get('config');
+    const logo = params.get('logo');
+    
     if (config) {
       SheetService.setScriptUrl(config);
-      // Clean URL
-      window.history.replaceState({}, '', window.location.pathname);
+    }
+    
+    if (logo) {
+      SheetService.setLogoUrl(logo);
+      setAppLogo(logo);
+    }
+    
+    if (config || logo) {
+       // Clean URL
+       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 

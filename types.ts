@@ -11,8 +11,7 @@ export enum ShirtSize {
   S = 'S',
   M = 'M',
   L = 'L',
-  XL = 'XL',
-  XXL = 'XXL'
+  XL = 'XL'
 }
 
 export type PaymentMethod = 'TRANSFER' | 'CASH';

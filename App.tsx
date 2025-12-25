@@ -34,6 +34,7 @@ const MONTHS = [
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
+// Versi: v2 (Added Gender support)
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -355,7 +356,7 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
             <ol className="list-decimal ml-4 space-y-1">
               <li>Klik tombol <strong>Deploy</strong> (kanan atas) &gt; <strong>New Deployment</strong>.</li>
               <li>Pilih type: <strong>Web app</strong>.</li>
-              <li>Description: "v1".</li>
+              <li>Description: "v2".</li>
               <li>Execute as: <strong>Me</strong> (email anda).</li>
               <li>Who has access: <strong>Anyone</strong> (PENTING!).</li>
               <li>Klik <strong>Deploy</strong>, lalu salin <strong>Web App URL</strong>.</li>

@@ -34,7 +34,28 @@ const MONTHS = [
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v3 (Fix Member Not Found - Robust Phone Matching)
+// Versi: v5 (Auto-Column Creation & Indonesian Format Support)
+
+// Konfigurasi Mapping: Key Aplikasi <-> Header Google Sheet
+// Script akan mencari header dari kiri ke kanan. Jika tidak ada, akan membuat header pertama (Indonesia).
+var FIELD_MAPPING = [
+  { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
+  { key: "whatsapp", label: "No. WhatsApp", aliases: ["WhatsApp", "Nomor WA", "Phone"] },
+  { key: "status", label: "Status Member", aliases: ["Status"] },
+  { key: "paymentAmount", label: "Nominal Transfer", aliases: ["PaymentAmount", "Jumlah", "Harga"] },
+  { key: "paymentCode", label: "Kode Unik", aliases: ["PaymentCode", "Kode"] },
+  { key: "paymentMethod", label: "Metode Bayar", aliases: ["PaymentMethod", "Via"] },
+  { key: "fullName", label: "Nama Lengkap Anak", aliases: ["FullName", "Nama Lengkap"] },
+  { key: "nickname", label: "Nama Panggilan", aliases: ["Nickname", "Panggilan"] },
+  { key: "gender", label: "Jenis Kelamin", aliases: ["Gender", "JK"] },
+  { key: "birthYear", label: "Tahun Lahir", aliases: ["BirthYear", "Tahun"] },
+  { key: "birthDate", label: "Tanggal Lahir", aliases: ["BirthDate", "Tgl Lahir"] },
+  { key: "fatherName", label: "Nama Ayah", aliases: ["FatherName", "Ayah"] },
+  { key: "motherName", label: "Nama Ibu", aliases: ["MotherName", "Ibu"] },
+  { key: "addressKK", label: "Alamat KK", aliases: ["AddressKK", "KK"] },
+  { key: "addressDomicile", label: "Alamat Domisili", aliases: ["AddressDomicile", "Domisili"] },
+  { key: "shirtSize", label: "Ukuran Baju", aliases: ["ShirtSize", "Jersey", "Size"] }
+];
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -42,29 +63,33 @@ function doPost(e) {
   
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("MemberData");
-    if (!sheet) {
-      sheet = ss.insertSheet("MemberData");
-      sheet.appendRow(["Timestamp", "WhatsApp", "Status", "PaymentAmount", "PaymentCode", "PaymentMethod", "FullName", "Nickname", "BirthYear", "BirthDate", "FatherName", "MotherName", "AddressKK", "AddressDomicile", "ShirtSize", "Gender"]);
-    }
+    // Gunakan sheet "MemberData" atau sheet pertama jika tidak ada
+    var sheet = ss.getSheetByName("MemberData") || ss.getSheets()[0];
+    
+    // 1. SETUP KOLOM OTOMATIS (AUTO-MIGRATION)
+    // Fungsi ini akan memastikan semua kolom ada. Jika belum ada (misal Gender), akan dibuatkan otomatis.
+    // Fungsi ini mengembalikan Peta Index Kolom { whatsapp: 2, fullName: 7, ... }
+    var colMap = setupColumns(sheet);
     
     var params = JSON.parse(e.postData.contents);
     var action = params.action;
     var result = {};
     
     if (action == "get_all") {
-      result = getAllMembers(sheet);
+      result = getAllMembers(sheet, colMap);
     } else if (action == "check_status") {
-      result = handleCheckStatus(sheet, params);
+      result = handleCheckStatus(sheet, colMap, params);
     } else if (action == "confirm_payment") {
-      result = handleConfirmPayment(sheet, params);
+      result = handleConfirmPayment(sheet, colMap, params);
     } else if (action == "admin_approve") {
-      result = handleAdminApprove(sheet, params);
+      result = handleAdminApprove(sheet, colMap, params);
     } else if (action == "submit_registration") {
-      result = handleSubmitRegistration(sheet, params);
+      result = handleSubmitRegistration(sheet, colMap, params);
     } else if (action == "wipe_all") {
+      // Danger zone
       sheet.clearContents();
-      sheet.appendRow(["Timestamp", "WhatsApp", "Status", "PaymentAmount", "PaymentCode", "PaymentMethod", "FullName", "Nickname", "BirthYear", "BirthDate", "FatherName", "MotherName", "AddressKK", "AddressDomicile", "ShirtSize", "Gender"]);
+      // Re-setup headers
+      setupColumns(sheet);
       result = {success: true};
     }
     
@@ -77,130 +102,202 @@ function doPost(e) {
   }
 }
 
-function getAllMembers(sheet) {
+// --- CORE FUNCTIONS ---
+
+function setupColumns(sheet) {
+  var lastCol = sheet.getLastColumn();
+  var headers = [];
+  if (lastCol > 0) {
+    headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  }
+  
+  var map = {};
+  var headersChanged = false;
+  
+  // Loop setiap field yang dibutuhkan aplikasi
+  for (var i = 0; i < FIELD_MAPPING.length; i++) {
+    var field = FIELD_MAPPING[i];
+    var foundIndex = -1;
+    
+    // 1. Cek apakah Label Utama (Indonesian) ada?
+    var idx = headers.indexOf(field.label);
+    if (idx > -1) {
+      foundIndex = idx + 1; // 1-based index
+    }
+    
+    // 2. Jika tidak ada, cek Alias (Legacy Headers dari versi lama)
+    if (foundIndex === -1 && field.aliases) {
+      for (var j = 0; j < field.aliases.length; j++) {
+        var aliasIdx = headers.indexOf(field.aliases[j]);
+        if (aliasIdx > -1) {
+          foundIndex = aliasIdx + 1;
+          break;
+        }
+      }
+    }
+    
+    // 3. Jika benar-benar tidak ada, BUAT KOLOM BARU DI UJUNG KANAN
+    if (foundIndex === -1) {
+      // Jika sheet masih kosong total, kita mulai dari kolom 1, dst.
+      // Jika sudah ada isinya, kita append.
+      var newColIdx = headers.length + 1;
+      
+      // Jika ini sheet baru banget, pastikan newColIdx sesuai urutan i+1
+      // Tapi karena headers.length 0, maka newColIdx = 1.
+      
+      sheet.getRange(1, newColIdx).setValue(field.label); // Buat Header Indonesia
+      headers.push(field.label); // Update local headers array agar loop berikutnya tahu
+      foundIndex = newColIdx;
+      headersChanged = true;
+    }
+    
+    // Simpan index kolom ke map
+    map[field.key] = foundIndex;
+  }
+  
+  // Optional: Bold header row if changed
+  if (headersChanged) {
+     sheet.getRange(1, 1, 1, sheet.getLastColumn()).setFontWeight("bold");
+  }
+  
+  return map;
+}
+
+function getAllMembers(sheet, colMap) {
   var data = sheet.getDataRange().getValues();
   var members = [];
-  // Skip header
+  var waColIdx = colMap['whatsapp'] - 1; // Array index (0-based)
+  
   for (var i = 1; i < data.length; i++) {
     var row = data[i];
-    if (row[1]) {
-      members.push(rowToMember(row));
+    // Pastikan row memiliki data di kolom WA (validasi sederhana)
+    // Gunakan pengecekan length row karena row baru mungkin lebih pendek dari kolom baru
+    if (row.length > waColIdx && row[waColIdx]) {
+      members.push(rowToMember(row, colMap));
     }
   }
   return members;
 }
 
-function handleCheckStatus(sheet, params) {
+function handleCheckStatus(sheet, colMap, params) {
   var wa = params.whatsapp;
   var nickname = params.nickname || "";
-  var rowIndex = findRowIndex(sheet, wa);
+  var rowIndex = findRowIndex(sheet, colMap, wa);
   
   if (rowIndex == -1) {
+    // Create New
     var randomCode = Math.floor(Math.random() * 90 + 10);
     var amount = 200000 + randomCode;
-    // Force string format for WhatsApp to prevent leading zero loss
     var waString = "'" + wa; 
-    var newRow = [new Date(), waString, "NEW", amount, randomCode, "", "", nickname, "", "", "", "", "", "", "", ""];
-    sheet.appendRow(newRow);
-    // Return the clean wa for frontend consistency
-    var createdRow = sheet.getRange(sheet.getLastRow(), 1, 1, 16).getValues()[0];
-    return rowToMember(createdRow);
+    
+    var newRowIdx = sheet.getLastRow() + 1;
+    
+    // Tulis data per cell berdasarkan colMap
+    sheet.getRange(newRowIdx, colMap['timestamp']).setValue(new Date());
+    sheet.getRange(newRowIdx, colMap['whatsapp']).setValue(waString);
+    sheet.getRange(newRowIdx, colMap['status']).setValue("NEW");
+    sheet.getRange(newRowIdx, colMap['paymentAmount']).setValue(amount);
+    sheet.getRange(newRowIdx, colMap['paymentCode']).setValue(randomCode);
+    if(nickname) sheet.getRange(newRowIdx, colMap['nickname']).setValue(nickname);
+    
+    // Return formatted object
+    return getMemberAtRow(sheet, colMap, newRowIdx);
   } else {
-    var row = sheet.getRange(rowIndex, 1, 1, 16).getValues()[0];
-    return rowToMember(row);
+    return getMemberAtRow(sheet, colMap, rowIndex);
   }
 }
 
-function handleConfirmPayment(sheet, params) {
-  var wa = params.whatsapp;
-  var method = params.method;
-  var rowIndex = findRowIndex(sheet, wa);
-  if (rowIndex == -1) throw "Member not found (WA: " + wa + ")";
-  
-  sheet.getRange(rowIndex, 3).setValue("WAITING_APPROVAL");
-  sheet.getRange(rowIndex, 6).setValue(method);
-  
-  if (method === "CASH") {
-     sheet.getRange(rowIndex, 4).setValue(200000);
-  }
-  
-  var row = sheet.getRange(rowIndex, 1, 1, 16).getValues()[0];
-  return rowToMember(row);
-}
-
-function handleAdminApprove(sheet, params) {
-  var wa = params.whatsapp;
-  var rowIndex = findRowIndex(sheet, wa);
+function handleConfirmPayment(sheet, colMap, params) {
+  var rowIndex = findRowIndex(sheet, colMap, params.whatsapp);
   if (rowIndex == -1) throw "Member not found";
   
-  sheet.getRange(rowIndex, 3).setValue("APPROVED");
-  var row = sheet.getRange(rowIndex, 1, 1, 16).getValues()[0];
-  return rowToMember(row);
+  sheet.getRange(rowIndex, colMap['status']).setValue("WAITING_APPROVAL");
+  sheet.getRange(rowIndex, colMap['paymentMethod']).setValue(params.method);
+  
+  if (params.method === "CASH") {
+     sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(200000);
+  }
+  return getMemberAtRow(sheet, colMap, rowIndex);
 }
 
-function handleSubmitRegistration(sheet, params) {
-  var wa = params.whatsapp;
+function handleAdminApprove(sheet, colMap, params) {
+  var rowIndex = findRowIndex(sheet, colMap, params.whatsapp);
+  if (rowIndex == -1) throw "Member not found";
+  
+  sheet.getRange(rowIndex, colMap['status']).setValue("APPROVED");
+  return getMemberAtRow(sheet, colMap, rowIndex);
+}
+
+function handleSubmitRegistration(sheet, colMap, params) {
+  var rowIndex = findRowIndex(sheet, colMap, params.whatsapp);
+  if (rowIndex == -1) throw "Member not found";
   var data = params.data;
-  var rowIndex = findRowIndex(sheet, wa);
-  if (rowIndex == -1) throw "Member not found";
   
-  var range = sheet.getRange(rowIndex, 1, 1, 16);
-  sheet.getRange(rowIndex, 3).setValue("REGISTERED");
+  sheet.getRange(rowIndex, colMap['status']).setValue("REGISTERED");
   
-  if(data.fullName) sheet.getRange(rowIndex, 7).setValue(data.fullName);
-  if(data.nickname) sheet.getRange(rowIndex, 8).setValue(data.nickname);
-  if(data.birthYear) sheet.getRange(rowIndex, 9).setValue(data.birthYear);
-  if(data.birthDate) sheet.getRange(rowIndex, 10).setValue(data.birthDate);
-  if(data.fatherName) sheet.getRange(rowIndex, 11).setValue(data.fatherName);
-  if(data.motherName) sheet.getRange(rowIndex, 12).setValue(data.motherName);
-  if(data.addressKK) sheet.getRange(rowIndex, 13).setValue(data.addressKK);
-  if(data.addressDomicile) sheet.getRange(rowIndex, 14).setValue(data.addressDomicile);
-  if(data.shirtSize) sheet.getRange(rowIndex, 15).setValue(data.shirtSize);
-  if(data.gender) sheet.getRange(rowIndex, 16).setValue(data.gender);
-  
-  var row = range.getValues()[0];
-  return rowToMember(row);
+  // Dynamic update loop
+  for (var key in data) {
+    if (colMap[key]) {
+      var value = data[key];
+      // Tulis data ke kolom yang sesuai
+      sheet.getRange(rowIndex, colMap[key]).setValue(value);
+    }
+  }
+  return getMemberAtRow(sheet, colMap, rowIndex);
 }
 
-function findRowIndex(sheet, wa) {
+function findRowIndex(sheet, colMap, wa) {
   var data = sheet.getDataRange().getValues();
   var target = normalizePhone(wa);
+  var colIdx = colMap['whatsapp'] - 1; // 0-based
   
   for (var i = 1; i < data.length; i++) {
-    var current = normalizePhone(data[i][1]);
-    // Fuzzy match: if normalized phones match and are valid length
-    if (current == target && target.length > 5) {
-      return i + 1;
+    // Pastikan row memiliki kolom WA
+    if (data[i].length > colIdx) {
+      var rowVal = data[i][colIdx];
+      if (normalizePhone(rowVal) == target && target.length > 5) {
+        return i + 1; // 1-based row index
+      }
     }
   }
   return -1;
 }
 
-function normalizePhone(phone) {
-  var p = String(phone).replace(/\\D/g, '');
-  if (p.startsWith('62')) return '0' + p.substring(2);
-  if (p.startsWith('8')) return '0' + p;
-  return p;
+function getMemberAtRow(sheet, colMap, rowIndex) {
+  // Ambil data satu baris
+  var lastCol = sheet.getLastColumn();
+  // Pastikan kita mengambil range yang mencakup semua kolom yang mungkin ada
+  // Cari max index dari colMap
+  var maxIdx = 0;
+  for(var k in colMap) { if(colMap[k] > maxIdx) maxIdx = colMap[k]; }
+  
+  var finalLastCol = Math.max(lastCol, maxIdx);
+  
+  var rowValues = sheet.getRange(rowIndex, 1, 1, finalLastCol).getValues()[0];
+  return rowToMember(rowValues, colMap);
 }
 
-function rowToMember(row) {
-  return {
-    whatsapp: String(row[1]).replace(/'/g, ''), // Remove leading ' if present
-    status: row[2],
-    paymentAmount: row[3],
-    paymentCode: row[4],
-    paymentMethod: row[5],
-    fullName: row[6],
-    nickname: row[7],
-    birthYear: row[8],
-    birthDate: row[9],
-    fatherName: row[10],
-    motherName: row[11],
-    addressKK: row[12],
-    addressDomicile: row[13],
-    shirtSize: row[14],
-    gender: row[15]
-  };
+function rowToMember(rowArray, colMap) {
+  var m = {};
+  // Map back from Array index to Object Key
+  for (var key in colMap) {
+    var idx = colMap[key] - 1; // 0-based
+    if (idx < rowArray.length) {
+      var val = rowArray[idx];
+      // Clean up whatsapp
+      if (key === 'whatsapp') val = String(val).replace(/'/g, '');
+      m[key] = val;
+    }
+  }
+  return m;
+}
+
+function normalizePhone(phone) {
+  if (!phone) return "";
+  var p = String(phone).replace(/\\D/g, ''); 
+  if (p.startsWith('62')) p = p.substring(2);
+  if (p.startsWith('0')) p = p.substring(1);
+  return p;
 }
 `;
 
@@ -369,7 +466,7 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
             <ol className="list-decimal ml-4 space-y-1">
               <li>Klik tombol <strong>Deploy</strong> (kanan atas) &gt; <strong>New Deployment</strong>.</li>
               <li>Pilih type: <strong>Web app</strong>.</li>
-              <li>Description: "v3".</li>
+              <li>Description: "v5".</li>
               <li>Execute as: <strong>Me</strong> (email anda).</li>
               <li>Who has access: <strong>Anyone</strong> (PENTING!).</li>
               <li>Klik <strong>Deploy</strong>, lalu salin <strong>Web App URL</strong>.</li>

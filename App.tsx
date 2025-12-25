@@ -946,21 +946,7 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
             value={formData.nickname} onChange={e => handleChange('nickname', e.target.value)} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-semibold text-slate-700 block mb-1.5">Tahun Lahir</label>
-            <div className="relative">
-              <select required className="w-full p-3.5 border border-slate-200 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500 outline-none appearance-none transition"
-                value={formData.birthYear} onChange={e => handleChange('birthYear', parseInt(e.target.value))}>
-                <option value="">Pilih</option>
-                {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-              <div className="absolute right-3 top-4 pointer-events-none text-slate-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-              </div>
-            </div>
-          </div>
-          <div>
+        <div>
             <label className="text-sm font-semibold text-slate-700 block mb-1.5">Tanggal Lahir (Tgl & Bulan)</label>
             <div className="flex gap-2">
               <div className="relative w-1/3">
@@ -997,7 +983,6 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </div>
 
@@ -1203,4 +1188,41 @@ const App = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-slate-500">Panggilan</p>
-                                    <p className="font-
+                                    <p className="font-bold text-slate-800 text-lg">{member.nickname}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-500">Ukuran</p>
+                                    <p className="font-bold text-slate-800 text-lg">{member.shirtSize}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {WA_GROUP_LINK && (
+                          <div className="pt-4">
+                             <a href={WA_GROUP_LINK} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition shadow-lg shadow-green-200">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-8.68-2.031-9.67-.272-.099-.47-.149-.643-.149-.174 0-.347 0-.496 0-.149 0-.397.05-.62.347-.223.297-.868.843-.868 2.056 0 1.213.892 2.38 1.016 2.529.124.149 1.734 2.648 4.202 3.714 2.468 1.066 2.468.71 2.914.66.446-.05 1.438-.595 1.636-1.166.198-.57.198-1.066.149-1.166z"/></svg>
+                               Gabung Grup WhatsApp
+                             </a>
+                          </div>
+                        )}
+
+                        <button 
+                            onClick={handleReset}
+                            className="text-sm text-slate-400 hover:text-slate-600 underline mt-4 block mx-auto"
+                        >
+                            Kembali ke Halaman Utama
+                        </button>
+                    </div>
+                ) : null}
+             </>
+          )}
+       </main>
+
+       <Footer />
+       <GeminiChat />
+       <AdminLoginModal isOpen={showAdminLogin} onClose={() => setShowAdminLogin(false)} onSuccess={handleAdminSuccess} />
+    </div>
+  );
+};
+
+export default App;

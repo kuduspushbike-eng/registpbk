@@ -718,19 +718,31 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
           {members.map((m) => (
             <div key={m.whatsapp} className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col gap-3 transition hover:shadow-md group">
               <div className="flex justify-between items-start">
-                <div>
-                  <div className="font-mono text-lg font-bold text-slate-800 tracking-wide">
-                    {sanitizePhoneNumber(m.whatsapp)}
+                <div className="space-y-1">
+                  {/* NAMA PANGGILAN (Highlight Utama) */}
+                  <div>
+                    <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Nama Panggilan</span>
+                    <div className="font-bold text-xl text-slate-800 uppercase leading-none">
+                      {m.nickname || "(Tanpa Nama)"}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-slate-500">
-                      {m.paymentMethod === 'CASH' ? 'TUNAI' : 'TRANSFER'}: <span className="font-medium text-slate-700">Rp {m.paymentAmount.toLocaleString('id-ID')}</span>
-                    </span>
-                    {m.paymentMethod === 'CASH' && (
-                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">CASH</span>
-                    )}
+
+                  {/* NOMOR WHATSAPP */}
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                     <span className="font-mono text-sm">{sanitizePhoneNumber(m.whatsapp)}</span>
+                  </div>
+
+                  {/* NOMINAL BAYAR */}
+                  <div className="pt-1">
+                     <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-md border text-xs ${m.paymentMethod === 'CASH' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
+                        <span className="font-semibold">{m.paymentMethod === 'CASH' ? 'TUNAI' : 'TRANSFER'}</span>
+                        <span className="w-px h-3 bg-current opacity-20"></span>
+                        <span className="font-bold font-mono text-sm">Rp {m.paymentAmount.toLocaleString('id-ID')}</span>
+                     </div>
                   </div>
                 </div>
+
                 <div className="text-right">
                    <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider 
                      ${m.status === UserStatus.WAITING_APPROVAL ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
@@ -744,8 +756,8 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
               {m.status === UserStatus.REGISTERED && (
                  <div className="text-sm bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
                     <p className="flex justify-between">
-                      <span className="text-slate-500">Anak:</span>
-                      <span className="font-medium text-slate-800">{m.fullName} ({m.nickname})</span>
+                      <span className="text-slate-500">Nama Lengkap:</span>
+                      <span className="font-medium text-slate-800">{m.fullName}</span>
                     </p>
                     <p className="flex justify-between">
                       <span className="text-slate-500">Lahir:</span>

@@ -31,7 +31,6 @@ export const setLogoUrl = (url: string) => {
   }
 };
 
-// Updated to accept an optional default override from App.tsx
 export const getLogoUrl = (overrideDefault?: string): string => {
   return localStorage.getItem(LOGO_URL_KEY) || overrideDefault || DEFAULT_LOGO;
 };
@@ -55,8 +54,6 @@ const callScript = async (action: string, payload: any = {}) => {
   const url = getActiveUrl();
   if (!url) throw new Error("Script URL not configured");
   
-  // We use standard fetch. Apps Script 'Anyone' access handles CORS for POST requests.
-  // Note: ensure the GAS deployment is set to 'Anyone' access.
   const response = await fetch(url, {
     method: "POST",
     body: JSON.stringify({ action, ...payload })
@@ -71,11 +68,11 @@ const callScript = async (action: string, payload: any = {}) => {
 // SERVICE METHODS
 // ============================================================================
 
-export const checkMemberStatus = async (whatsapp: string, nickname?: string): Promise<MemberData> => {
+export const checkMemberStatus = async (whatsapp: string, nickname?: string, childCount: number = 1): Promise<MemberData> => {
   // 1. REAL MODE
   if (getActiveUrl()) {
     try {
-      return await callScript('check_status', { whatsapp, nickname });
+      return await callScript('check_status', { whatsapp, nickname, childCount });
     } catch (e) {
       console.warn("API Error, falling back to mock check for safety", e);
       throw e;
@@ -90,13 +87,16 @@ export const checkMemberStatus = async (whatsapp: string, nickname?: string): Pr
     return db[whatsapp];
   }
 
+  const basePrice = childCount === 2 ? 300000 : 200000;
   const randomDigits = Math.floor(Math.random() * 90 + 10); // 10-99
+  
   const newMember: MemberData = {
     whatsapp,
     nickname: nickname || '',
+    childCount: childCount,
     status: UserStatus.NEW,
     paymentCode: randomDigits,
-    paymentAmount: 200000 + randomDigits // Default to transfer amount initially
+    paymentAmount: basePrice + randomDigits
   };
   
   db[whatsapp] = newMember;
@@ -117,15 +117,18 @@ export const confirmPayment = async (whatsapp: string, method: PaymentMethod): P
     db[whatsapp].status = UserStatus.WAITING_APPROVAL;
     db[whatsapp].paymentMethod = method;
     
-    // If Cash, normalize amount to flat 200,000. If Transfer, ensure it keeps the unique code.
+    // Calculate base price based on child count
+    const basePrice = db[whatsapp].childCount === 2 ? 300000 : 200000;
+
+    // If Cash, normalize amount to flat base price. If Transfer, ensure it keeps the unique code.
     if (method === 'CASH') {
-        db[whatsapp].paymentAmount = 200000;
+        db[whatsapp].paymentAmount = basePrice;
     } else {
         // Ensure unique code exists if switching back to transfer
-        if (db[whatsapp].paymentAmount === 200000) {
+        if (db[whatsapp].paymentAmount === basePrice) {
              const randomDigits = db[whatsapp].paymentCode || Math.floor(Math.random() * 90 + 10);
              db[whatsapp].paymentCode = randomDigits;
-             db[whatsapp].paymentAmount = 200000 + randomDigits;
+             db[whatsapp].paymentAmount = basePrice + randomDigits;
         }
     }
 

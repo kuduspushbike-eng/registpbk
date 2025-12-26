@@ -20,11 +20,9 @@ const ADMIN_PIN = "757515";
 const WA_GROUP_LINK = "https://chat.whatsapp.com/FaZDznBOKxSGEqHEMC9FkS"; 
 
 // 4. URL LOGO APLIKASI (Ganti link gambar disini)
-// Menggunakan icon sepeda dari Flaticon yang lebih stabil dan tidak diblokir
 const DEFAULT_APP_LOGO = "https://i.ibb.co.com/1YLtbnnD/logo-new-2.png";
 
-// 5. URL GAMBAR SIZE CHART (Ganti link gambar size chart JPG anda disini)
-// Menggunakan placeholder aman. Sebaiknya ganti dengan link Google Drive (Direct Link) atau hosting sendiri.
+// 5. URL GAMBAR SIZE CHART
 const SIZE_CHART_URL = "https://i.ibb.co.com/6cDkDj4Y/size-charrt.jpg";
 
 const MONTHS = [
@@ -36,10 +34,8 @@ const MONTHS = [
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v5 (Auto-Column Creation & Indonesian Format Support)
+// Versi: v6 (Support 2 Children & Dynamic Pricing)
 
-// Konfigurasi Mapping: Key Aplikasi <-> Header Google Sheet
-// Script akan mencari header dari kiri ke kanan. Jika tidak ada, akan membuat header pertama (Indonesia).
 var FIELD_MAPPING = [
   { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
   { key: "whatsapp", label: "No. WhatsApp", aliases: ["WhatsApp", "Nomor WA", "Phone"] },
@@ -47,16 +43,29 @@ var FIELD_MAPPING = [
   { key: "paymentAmount", label: "Nominal Transfer", aliases: ["PaymentAmount", "Jumlah", "Harga"] },
   { key: "paymentCode", label: "Kode Unik", aliases: ["PaymentCode", "Kode"] },
   { key: "paymentMethod", label: "Metode Bayar", aliases: ["PaymentMethod", "Via"] },
-  { key: "fullName", label: "Nama Lengkap Anak", aliases: ["FullName", "Nama Lengkap"] },
-  { key: "nickname", label: "Nama Panggilan", aliases: ["Nickname", "Panggilan"] },
-  { key: "gender", label: "Jenis Kelamin", aliases: ["Gender", "JK"] },
-  { key: "birthYear", label: "Tahun Lahir", aliases: ["BirthYear", "Tahun"] },
-  { key: "birthDate", label: "Tanggal Lahir", aliases: ["BirthDate", "Tgl Lahir"] },
+  { key: "childCount", label: "Jumlah Anak", aliases: ["ChildCount", "Jml Anak"] },
+  
+  // Child 1
+  { key: "fullName", label: "Nama Lengkap Anak 1", aliases: ["FullName", "Nama Lengkap"] },
+  { key: "nickname", label: "Nama Panggilan 1", aliases: ["Nickname", "Panggilan"] },
+  { key: "gender", label: "Jenis Kelamin 1", aliases: ["Gender", "JK"] },
+  { key: "birthYear", label: "Tahun Lahir 1", aliases: ["BirthYear", "Tahun"] },
+  { key: "birthDate", label: "Tanggal Lahir 1", aliases: ["BirthDate", "Tgl Lahir"] },
+  { key: "shirtSize", label: "Ukuran Baju 1", aliases: ["ShirtSize", "Jersey", "Size"] },
+
+  // Child 2 (Optional)
+  { key: "fullName2", label: "Nama Lengkap Anak 2", aliases: ["FullName2"] },
+  { key: "nickname2", label: "Nama Panggilan 2", aliases: ["Nickname2"] },
+  { key: "gender2", label: "Jenis Kelamin 2", aliases: ["Gender2", "JK2"] },
+  { key: "birthYear2", label: "Tahun Lahir 2", aliases: ["BirthYear2"] },
+  { key: "birthDate2", label: "Tanggal Lahir 2", aliases: ["BirthDate2"] },
+  { key: "shirtSize2", label: "Ukuran Baju 2", aliases: ["ShirtSize2"] },
+
+  // Parents
   { key: "fatherName", label: "Nama Ayah", aliases: ["FatherName", "Ayah"] },
   { key: "motherName", label: "Nama Ibu", aliases: ["MotherName", "Ibu"] },
   { key: "addressKK", label: "Alamat KK", aliases: ["AddressKK", "KK"] },
-  { key: "addressDomicile", label: "Alamat Domisili", aliases: ["AddressDomicile", "Domisili"] },
-  { key: "shirtSize", label: "Ukuran Baju", aliases: ["ShirtSize", "Jersey", "Size"] }
+  { key: "addressDomicile", label: "Alamat Domisili", aliases: ["AddressDomicile", "Domisili"] }
 ];
 
 function doPost(e) {
@@ -65,12 +74,7 @@ function doPost(e) {
   
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    // Gunakan sheet "MemberData" atau sheet pertama jika tidak ada
     var sheet = ss.getSheetByName("MemberData") || ss.getSheets()[0];
-    
-    // 1. SETUP KOLOM OTOMATIS (AUTO-MIGRATION)
-    // Fungsi ini akan memastikan semua kolom ada. Jika belum ada (misal Gender), akan dibuatkan otomatis.
-    // Fungsi ini mengembalikan Peta Index Kolom { whatsapp: 2, fullName: 7, ... }
     var colMap = setupColumns(sheet);
     
     var params = JSON.parse(e.postData.contents);
@@ -88,9 +92,7 @@ function doPost(e) {
     } else if (action == "submit_registration") {
       result = handleSubmitRegistration(sheet, colMap, params);
     } else if (action == "wipe_all") {
-      // Danger zone
       sheet.clearContents();
-      // Re-setup headers
       setupColumns(sheet);
       result = {success: true};
     }
@@ -104,76 +106,44 @@ function doPost(e) {
   }
 }
 
-// --- CORE FUNCTIONS ---
-
 function setupColumns(sheet) {
   var lastCol = sheet.getLastColumn();
   var headers = [];
   if (lastCol > 0) {
     headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   }
-  
   var map = {};
   var headersChanged = false;
-  
-  // Loop setiap field yang dibutuhkan aplikasi
   for (var i = 0; i < FIELD_MAPPING.length; i++) {
     var field = FIELD_MAPPING[i];
     var foundIndex = -1;
-    
-    // 1. Cek apakah Label Utama (Indonesian) ada?
     var idx = headers.indexOf(field.label);
-    if (idx > -1) {
-      foundIndex = idx + 1; // 1-based index
-    }
-    
-    // 2. Jika tidak ada, cek Alias (Legacy Headers dari versi lama)
+    if (idx > -1) foundIndex = idx + 1;
     if (foundIndex === -1 && field.aliases) {
       for (var j = 0; j < field.aliases.length; j++) {
         var aliasIdx = headers.indexOf(field.aliases[j]);
-        if (aliasIdx > -1) {
-          foundIndex = aliasIdx + 1;
-          break;
-        }
+        if (aliasIdx > -1) { foundIndex = aliasIdx + 1; break; }
       }
     }
-    
-    // 3. Jika benar-benar tidak ada, BUAT KOLOM BARU DI UJUNG KANAN
     if (foundIndex === -1) {
-      // Jika sheet masih kosong total, kita mulai dari kolom 1, dst.
-      // Jika sudah ada isinya, kita append.
       var newColIdx = headers.length + 1;
-      
-      // Jika ini sheet baru banget, pastikan newColIdx sesuai urutan i+1
-      // Tapi karena headers.length 0, maka newColIdx = 1.
-      
-      sheet.getRange(1, newColIdx).setValue(field.label); // Buat Header Indonesia
-      headers.push(field.label); // Update local headers array agar loop berikutnya tahu
+      sheet.getRange(1, newColIdx).setValue(field.label);
+      headers.push(field.label);
       foundIndex = newColIdx;
       headersChanged = true;
     }
-    
-    // Simpan index kolom ke map
     map[field.key] = foundIndex;
   }
-  
-  // Optional: Bold header row if changed
-  if (headersChanged) {
-     sheet.getRange(1, 1, 1, sheet.getLastColumn()).setFontWeight("bold");
-  }
-  
+  if (headersChanged) sheet.getRange(1, 1, 1, sheet.getLastColumn()).setFontWeight("bold");
   return map;
 }
 
 function getAllMembers(sheet, colMap) {
   var data = sheet.getDataRange().getValues();
   var members = [];
-  var waColIdx = colMap['whatsapp'] - 1; // Array index (0-based)
-  
+  var waColIdx = colMap['whatsapp'] - 1;
   for (var i = 1; i < data.length; i++) {
     var row = data[i];
-    // Pastikan row memiliki data di kolom WA (validasi sederhana)
-    // Gunakan pengecekan length row karena row baru mungkin lebih pendek dari kolom baru
     if (row.length > waColIdx && row[waColIdx]) {
       members.push(rowToMember(row, colMap));
     }
@@ -184,25 +154,24 @@ function getAllMembers(sheet, colMap) {
 function handleCheckStatus(sheet, colMap, params) {
   var wa = params.whatsapp;
   var nickname = params.nickname || "";
+  var childCount = params.childCount || 1;
   var rowIndex = findRowIndex(sheet, colMap, wa);
   
   if (rowIndex == -1) {
-    // Create New
     var randomCode = Math.floor(Math.random() * 90 + 10);
-    var amount = 200000 + randomCode;
+    var basePrice = childCount == 2 ? 300000 : 200000;
+    var amount = basePrice + randomCode;
     var waString = "'" + wa; 
     
     var newRowIdx = sheet.getLastRow() + 1;
-    
-    // Tulis data per cell berdasarkan colMap
     sheet.getRange(newRowIdx, colMap['timestamp']).setValue(new Date());
     sheet.getRange(newRowIdx, colMap['whatsapp']).setValue(waString);
     sheet.getRange(newRowIdx, colMap['status']).setValue("NEW");
     sheet.getRange(newRowIdx, colMap['paymentAmount']).setValue(amount);
     sheet.getRange(newRowIdx, colMap['paymentCode']).setValue(randomCode);
+    sheet.getRange(newRowIdx, colMap['childCount']).setValue(childCount);
     if(nickname) sheet.getRange(newRowIdx, colMap['nickname']).setValue(nickname);
     
-    // Return formatted object
     return getMemberAtRow(sheet, colMap, newRowIdx);
   } else {
     return getMemberAtRow(sheet, colMap, rowIndex);
@@ -217,7 +186,10 @@ function handleConfirmPayment(sheet, colMap, params) {
   sheet.getRange(rowIndex, colMap['paymentMethod']).setValue(params.method);
   
   if (params.method === "CASH") {
-     sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(200000);
+     // Re-calculate base price incase it was modified or just for safety
+     var currentChildCount = sheet.getRange(rowIndex, colMap['childCount']).getValue() || 1;
+     var basePrice = currentChildCount == 2 ? 300000 : 200000;
+     sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(basePrice);
   }
   return getMemberAtRow(sheet, colMap, rowIndex);
 }
@@ -225,7 +197,6 @@ function handleConfirmPayment(sheet, colMap, params) {
 function handleAdminApprove(sheet, colMap, params) {
   var rowIndex = findRowIndex(sheet, colMap, params.whatsapp);
   if (rowIndex == -1) throw "Member not found";
-  
   sheet.getRange(rowIndex, colMap['status']).setValue("APPROVED");
   return getMemberAtRow(sheet, colMap, rowIndex);
 }
@@ -234,15 +205,10 @@ function handleSubmitRegistration(sheet, colMap, params) {
   var rowIndex = findRowIndex(sheet, colMap, params.whatsapp);
   if (rowIndex == -1) throw "Member not found";
   var data = params.data;
-  
   sheet.getRange(rowIndex, colMap['status']).setValue("REGISTERED");
-  
-  // Dynamic update loop
   for (var key in data) {
     if (colMap[key]) {
-      var value = data[key];
-      // Tulis data ke kolom yang sesuai
-      sheet.getRange(rowIndex, colMap[key]).setValue(value);
+      sheet.getRange(rowIndex, colMap[key]).setValue(data[key]);
     }
   }
   return getMemberAtRow(sheet, colMap, rowIndex);
@@ -251,42 +217,31 @@ function handleSubmitRegistration(sheet, colMap, params) {
 function findRowIndex(sheet, colMap, wa) {
   var data = sheet.getDataRange().getValues();
   var target = normalizePhone(wa);
-  var colIdx = colMap['whatsapp'] - 1; // 0-based
-  
+  var colIdx = colMap['whatsapp'] - 1;
   for (var i = 1; i < data.length; i++) {
-    // Pastikan row memiliki kolom WA
     if (data[i].length > colIdx) {
       var rowVal = data[i][colIdx];
-      if (normalizePhone(rowVal) == target && target.length > 5) {
-        return i + 1; // 1-based row index
-      }
+      if (normalizePhone(rowVal) == target && target.length > 5) return i + 1;
     }
   }
   return -1;
 }
 
 function getMemberAtRow(sheet, colMap, rowIndex) {
-  // Ambil data satu baris
   var lastCol = sheet.getLastColumn();
-  // Pastikan kita mengambil range yang mencakup semua kolom yang mungkin ada
-  // Cari max index dari colMap
   var maxIdx = 0;
   for(var k in colMap) { if(colMap[k] > maxIdx) maxIdx = colMap[k]; }
-  
   var finalLastCol = Math.max(lastCol, maxIdx);
-  
   var rowValues = sheet.getRange(rowIndex, 1, 1, finalLastCol).getValues()[0];
   return rowToMember(rowValues, colMap);
 }
 
 function rowToMember(rowArray, colMap) {
   var m = {};
-  // Map back from Array index to Object Key
   for (var key in colMap) {
-    var idx = colMap[key] - 1; // 0-based
+    var idx = colMap[key] - 1;
     if (idx < rowArray.length) {
       var val = rowArray[idx];
-      // Clean up whatsapp
       if (key === 'whatsapp') val = String(val).replace(/'/g, '');
       m[key] = val;
     }
@@ -500,7 +455,7 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
             <ol className="list-decimal ml-4 space-y-1">
               <li>Klik tombol <strong>Deploy</strong> (kanan atas) &gt; <strong>New Deployment</strong>.</li>
               <li>Pilih type: <strong>Web app</strong>.</li>
-              <li>Description: "v5".</li>
+              <li>Description: "v6".</li>
               <li>Execute as: <strong>Me</strong> (email anda).</li>
               <li>Who has access: <strong>Anyone</strong> (PENTING!).</li>
               <li>Klik <strong>Deploy</strong>, lalu salin <strong>Web App URL</strong>.</li>
@@ -718,56 +673,92 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
           {members.map((m) => (
             <div key={m.whatsapp} className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col gap-3 transition hover:shadow-md group">
               <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  {/* NAMA PANGGILAN (Highlight Utama) */}
-                  <div>
-                    <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Nama Panggilan</span>
-                    <div className="font-bold text-xl text-slate-800 uppercase leading-none">
-                      {m.nickname || "(Tanpa Nama)"}
+                <div className="space-y-1 w-full">
+                   {/* PACK BADGE */}
+                  {m.childCount === 2 && (
+                    <div className="inline-block mb-1">
+                      <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-200">PAKET 2 ANAK</span>
                     </div>
+                  )}
+
+                  {/* NAMA PANGGILAN (Highlight Utama) */}
+                  <div className="flex flex-col gap-1">
+                    <div>
+                        <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Anak 1</span>
+                        <div className="font-bold text-xl text-slate-800 uppercase leading-none">
+                        {m.nickname || "(Tanpa Nama)"}
+                        </div>
+                    </div>
+                    {m.childCount === 2 && (
+                        <div>
+                            <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Anak 2</span>
+                            <div className="font-bold text-xl text-slate-800 uppercase leading-none">
+                            {m.nickname2 || "(Belum Diisi)"}
+                            </div>
+                        </div>
+                    )}
                   </div>
 
                   {/* NOMOR WHATSAPP */}
-                  <div className="flex items-center gap-1.5 text-slate-500">
+                  <div className="flex items-center gap-1.5 text-slate-500 mt-2">
                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                      <span className="font-mono text-sm">{sanitizePhoneNumber(m.whatsapp)}</span>
                   </div>
 
                   {/* NOMINAL BAYAR */}
-                  <div className="pt-1">
+                  <div className="pt-2 flex justify-between items-end">
                      <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-md border text-xs ${m.paymentMethod === 'CASH' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
                         <span className="font-semibold">{m.paymentMethod === 'CASH' ? 'TUNAI' : 'TRANSFER'}</span>
                         <span className="w-px h-3 bg-current opacity-20"></span>
                         <span className="font-bold font-mono text-sm">Rp {m.paymentAmount.toLocaleString('id-ID')}</span>
                      </div>
+                     
+                     <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider 
+                        ${m.status === UserStatus.WAITING_APPROVAL ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
+                        m.status === UserStatus.APPROVED ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                        m.status === UserStatus.REGISTERED ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                        {m.status.replace('_', ' ')}
+                    </span>
                   </div>
-                </div>
-
-                <div className="text-right">
-                   <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider 
-                     ${m.status === UserStatus.WAITING_APPROVAL ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
-                       m.status === UserStatus.APPROVED ? 'bg-blue-100 text-blue-700 border border-blue-200' :
-                       m.status === UserStatus.REGISTERED ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
-                     {m.status.replace('_', ' ')}
-                   </span>
                 </div>
               </div>
 
               {m.status === UserStatus.REGISTERED && (
-                 <div className="text-sm bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
-                    <p className="flex justify-between">
-                      <span className="text-slate-500">Nama Lengkap:</span>
-                      <span className="font-medium text-slate-800">{m.fullName}</span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="text-slate-500">Lahir:</span>
-                      <span className="font-medium text-slate-800">{m.birthYear}</span>
-                    </p>
-                    {m.gender && (
-                      <p className="flex justify-between">
-                        <span className="text-slate-500">Gender:</span>
-                        <span className="font-medium text-slate-800">{m.gender}</span>
-                      </p>
+                 <div className="text-sm bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-3">
+                    {/* Data Anak 1 */}
+                    <div className="space-y-1">
+                        <p className="font-bold text-slate-400 text-[10px] uppercase border-b pb-1 mb-1">Data Anak 1</p>
+                        <p className="flex justify-between">
+                        <span className="text-slate-500">Nama:</span>
+                        <span className="font-medium text-slate-800">{m.fullName}</span>
+                        </p>
+                        <p className="flex justify-between">
+                        <span className="text-slate-500">Lahir:</span>
+                        <span className="font-medium text-slate-800">{m.birthYear} ({m.gender})</span>
+                        </p>
+                         <p className="flex justify-between">
+                        <span className="text-slate-500">Size:</span>
+                        <span className="font-medium text-slate-800">{m.shirtSize}</span>
+                        </p>
+                    </div>
+
+                    {/* Data Anak 2 (If Exists) */}
+                     {m.childCount === 2 && (
+                        <div className="space-y-1 pt-1">
+                            <p className="font-bold text-slate-400 text-[10px] uppercase border-b pb-1 mb-1">Data Anak 2</p>
+                            <p className="flex justify-between">
+                            <span className="text-slate-500">Nama:</span>
+                            <span className="font-medium text-slate-800">{m.fullName2}</span>
+                            </p>
+                            <p className="flex justify-between">
+                            <span className="text-slate-500">Lahir:</span>
+                            <span className="font-medium text-slate-800">{m.birthYear2} ({m.gender2})</span>
+                            </p>
+                            <p className="flex justify-between">
+                            <span className="text-slate-500">Size:</span>
+                            <span className="font-medium text-slate-800">{m.shirtSize2}</span>
+                            </p>
+                        </div>
                     )}
                  </div>
               )}
@@ -953,21 +944,22 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
   );
 };
 
-const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: string) => void, logoUrl: string }) => {
+const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: string, childCount: number) => void, logoUrl: string }) => {
   const [phone, setPhone] = useState('');
   const [nickname, setNickname] = useState('');
+  const [childCount, setChildCount] = useState<number>(1);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (phone.length < 9) return alert('Nomor WhatsApp tidak valid');
-    if (nickname.trim().length < 2) return alert('Nama panggilan harus diisi');
+    if (nickname.trim().length < 2) return alert('Nama panggilan anak pertama harus diisi');
     
     setLoading(true);
     // Sanitize input before sending
     const cleanNumber = sanitizePhoneNumber(phone);
     const cleanNick = nickname.toUpperCase();
-    await onLogin(cleanNumber, cleanNick);
+    await onLogin(cleanNumber, cleanNick, childCount);
     setLoading(false);
   };
 
@@ -980,6 +972,25 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
           Silakan lengkapi data awal untuk memulai proses registrasi ulang member Pushbike Kudus.
         </p>
       </div>
+      
+      {/* CHILD COUNT SELECTOR */}
+      <div className="bg-white p-1 rounded-xl border border-slate-200 flex shadow-sm">
+         <button 
+            type="button" 
+            onClick={() => setChildCount(1)}
+            className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all ${childCount === 1 ? 'bg-orange-500 text-white shadow' : 'text-slate-500 hover:bg-slate-50'}`}
+         >
+           1 RIDER (Rp 200rb)
+         </button>
+         <button 
+            type="button" 
+            onClick={() => setChildCount(2)}
+            className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all ${childCount === 2 ? 'bg-purple-600 text-white shadow' : 'text-slate-500 hover:bg-slate-50'}`}
+         >
+           2 RIDER (Rp 300rb)
+         </button>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">Nomor WhatsApp</label>
@@ -996,7 +1007,7 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
           </div>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">Nama Panggilan Anak</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Nama Panggilan Anak 1</label>
           <input
             type="text"
             className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition font-medium uppercase placeholder:normal-case placeholder:text-slate-400"
@@ -1026,7 +1037,9 @@ const StepPayment = ({ member, onConfirm }: { member: MemberData, onConfirm: (me
     <div className="animate-fade-in space-y-6">
        <div className="text-center">
          <h2 className="text-xl font-bold text-slate-800">Pembayaran Registrasi</h2>
-         <p className="text-slate-500 text-sm">Silakan pilih metode pembayaran.</p>
+         <p className="text-slate-500 text-sm">
+             Paket: <strong className="text-slate-800">{member.childCount === 2 ? '2 Rider' : '1 Rider'}</strong>
+         </p>
        </div>
 
        <div className="grid grid-cols-2 gap-3">
@@ -1077,7 +1090,7 @@ const StepPayment = ({ member, onConfirm }: { member: MemberData, onConfirm: (me
                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             </div>
             <p className="text-sm text-slate-600">
-              Silakan serahkan uang tunai sebesar <strong>Rp 200.000</strong> kepada Admin/Pengurus saat latihan.
+              Silakan serahkan uang tunai sebesar <strong>Rp {(member.childCount === 2 ? 300000 : 200000).toLocaleString('id-ID')}</strong> kepada Admin/Pengurus saat latihan.
             </p>
             <p className="text-xs text-slate-400">
               Admin akan melakukan verifikasi manual setelah uang diterima.
@@ -1127,11 +1140,20 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
     gender: initialData.gender || 'BOY',
     birthYear: initialData.birthYear || BIRTH_YEARS[0],
     birthDate: initialData.birthDate || '',
+    shirtSize: initialData.shirtSize || ShirtSize.S,
+    
+    // Child 2 Defaults
+    fullName2: initialData.fullName2 || '',
+    nickname2: initialData.nickname2 || '',
+    gender2: initialData.gender2 || 'BOY',
+    birthYear2: initialData.birthYear2 || BIRTH_YEARS[0],
+    birthDate2: initialData.birthDate2 || '',
+    shirtSize2: initialData.shirtSize2 || ShirtSize.S,
+
     fatherName: initialData.fatherName || '',
     motherName: initialData.motherName || '',
     addressKK: initialData.addressKK || '',
     addressDomicile: initialData.addressDomicile || '',
-    shirtSize: initialData.shirtSize || ShirtSize.S,
   });
 
   const [sameAddress, setSameAddress] = useState(false);
@@ -1147,28 +1169,25 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
     let finalValue = value;
     
     // Force uppercase for text fields
-    if (typeof value === 'string' && field !== 'birthDate' && field !== 'shirtSize' && field !== 'gender') {
+    if (typeof value === 'string' && !field.includes('birthDate') && !field.includes('shirtSize') && !field.includes('gender')) {
         finalValue = value.toUpperCase();
     }
 
-    // --- Sync Logic: Date Picker -> Dropdown ---
+    // --- Sync Logic: Date Picker -> Dropdown (Child 1) ---
     if (field === 'birthDate') {
         const year = parseInt(value.split('-')[0]);
-        // If user picks a date, auto-select the corresponding year
-        if (!isNaN(year)) {
-           setFormData(prev => ({ ...prev, [field]: value, birthYear: year }));
-           return;
-        }
+        if (!isNaN(year)) { setFormData(prev => ({ ...prev, [field]: value, birthYear: year })); return; }
     }
+    // --- Sync Logic: Dropdown -> Date Picker (Child 1) ---
+    if (field === 'birthYear') { setFormData(prev => ({ ...prev, [field]: value, birthDate: '' })); return; }
 
-    // --- Sync Logic: Dropdown -> Date Picker Constraints ---
-    if (field === 'birthYear') {
-        // If year changes, reset date to force re-selection within valid range 
-        // OR simply set year and let user fix the date. 
-        // Better UX: Clear date so they know they must pick again.
-        setFormData(prev => ({ ...prev, [field]: value, birthDate: '' }));
-        return;
+     // --- Sync Logic: Date Picker -> Dropdown (Child 2) ---
+    if (field === 'birthDate2') {
+        const year = parseInt(value.split('-')[0]);
+        if (!isNaN(year)) { setFormData(prev => ({ ...prev, [field]: value, birthYear2: year })); return; }
     }
+    // --- Sync Logic: Dropdown -> Date Picker (Child 2) ---
+    if (field === 'birthYear2') { setFormData(prev => ({ ...prev, [field]: value, birthDate2: '' })); return; }
 
     setFormData(prev => ({ ...prev, [field]: finalValue }));
   };
@@ -1183,39 +1202,36 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
       <form onSubmit={handleSubmit} className="animate-fade-in space-y-5 pb-10">
         <div className="text-center mb-6">
           <h2 className="text-xl font-bold text-slate-800">Lengkapi Data Diri</h2>
-          <p className="text-slate-500 text-sm">Isi formulir berikut dengan data yang benar.</p>
+          <p className="text-slate-500 text-sm">Mohon isi data dengan benar.</p>
         </div>
 
         <div className="space-y-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Anak</h3>
+          
+          {/* CHILD 1 SECTION */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">ANAK 1</div>
+              <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Anak 1</h3>
               
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap Anak</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap</label>
                 <input 
-                  type="text" 
-                  required 
+                  type="text" required 
                   className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
                   value={formData.fullName} 
                   onChange={e => handleChange('fullName', e.target.value)} 
-                  autoCapitalize="characters"
                 />
               </div>
-              
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Panggilan</label>
                 <input 
-                  type="text" 
-                  required 
+                  type="text" required 
                   className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
                   value={formData.nickname} 
                   onChange={e => handleChange('nickname', e.target.value)} 
-                  autoCapitalize="characters"
                 />
               </div>
-
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Jenis Kelamin (Gender)</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Jenis Kelamin</label>
                 <div className="grid grid-cols-2 gap-3">
                      <button type="button" onClick={() => handleChange('gender', 'BOY')} className={`p-3 rounded-lg border flex items-center justify-center gap-2 transition ${formData.gender === 'BOY' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
                         <span className="font-bold text-sm">BOYS</span>
@@ -1225,7 +1241,6 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
                      </button>
                 </div>
               </div>
-              
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Tahun Lahir</label>
@@ -1235,41 +1250,86 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
                   </select>
                 </div>
               </div>
-
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Tanggal Lahir Lengkap</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Tanggal Lahir</label>
                 <input 
-                  type="date" 
-                  required 
+                  type="date" required 
                   className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                  min={`${formData.birthYear}-01-01`}
-                  max={`${formData.birthYear}-12-31`}
+                  min={`${formData.birthYear}-01-01`} max={`${formData.birthYear}-12-31`}
                   value={formData.birthDate} 
                   onChange={e => handleChange('birthDate', e.target.value)} 
                 />
-                <p className="text-[10px] text-slate-400 mt-1">*Pastikan tahun sesuai dengan pilihan diatas</p>
               </div>
-
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-semibold text-slate-600">Ukuran Baju (Jersey)</label>
-                  <button type="button" onClick={() => setShowSizeChart(true)} className="text-[10px] text-blue-600 font-bold hover:underline flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    Lihat Size Chart
-                  </button>
+                  <label className="block text-xs font-semibold text-slate-600">Ukuran Baju</label>
+                  <button type="button" onClick={() => setShowSizeChart(true)} className="text-[10px] text-blue-600 font-bold hover:underline">Lihat Size Chart</button>
                 </div>
                 <div className="grid grid-cols-6 gap-1">
                   {Object.values(ShirtSize).map(size => (
-                    <div key={size} 
-                      onClick={() => handleChange('shirtSize', size)}
+                    <div key={size} onClick={() => handleChange('shirtSize', size)}
                       className={`cursor-pointer text-center py-2 text-xs font-bold rounded border transition-colors ${formData.shirtSize === size ? 'bg-orange-500 text-white border-orange-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                    >
-                      {size}
-                    </div>
+                    >{size}</div>
                   ))}
                 </div>
               </div>
           </div>
+
+          {/* CHILD 2 SECTION (CONDITIONAL) */}
+          {initialData.childCount === 2 && (
+             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-purple-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">ANAK 2</div>
+                <h3 className="text-sm font-bold text-purple-700 uppercase tracking-wider border-b pb-2">Data Anak 2</h3>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap Anak 2</label>
+                  <input type="text" required className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" 
+                    value={formData.fullName2} onChange={e => handleChange('fullName2', e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Panggilan Anak 2</label>
+                  <input type="text" required className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" 
+                    value={formData.nickname2} onChange={e => handleChange('nickname2', e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Jenis Kelamin</label>
+                  <div className="grid grid-cols-2 gap-3">
+                      <button type="button" onClick={() => handleChange('gender2', 'BOY')} className={`p-3 rounded-lg border flex items-center justify-center gap-2 transition ${formData.gender2 === 'BOY' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                          <span className="font-bold text-sm">BOYS</span>
+                      </button>
+                      <button type="button" onClick={() => handleChange('gender2', 'GIRL')} className={`p-3 rounded-lg border flex items-center justify-center gap-2 transition ${formData.gender2 === 'GIRL' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                          <span className="font-bold text-sm">GIRLS</span>
+                      </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Tahun Lahir</label>
+                    <select className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+                      value={formData.birthYear2} onChange={e => handleChange('birthYear2', Number(e.target.value))}>
+                      {BIRTH_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Tanggal Lahir</label>
+                  <input type="date" required className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" 
+                    min={`${formData.birthYear2}-01-01`} max={`${formData.birthYear2}-12-31`}
+                    value={formData.birthDate2} onChange={e => handleChange('birthDate2', e.target.value)} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Ukuran Baju</label>
+                  <div className="grid grid-cols-6 gap-1">
+                    {Object.values(ShirtSize).map(size => (
+                      <div key={size} onClick={() => handleChange('shirtSize2', size)}
+                        className={`cursor-pointer text-center py-2 text-xs font-bold rounded border transition-colors ${formData.shirtSize2 === size ? 'bg-purple-600 text-white border-purple-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                      >{size}</div>
+                    ))}
+                  </div>
+                </div>
+            </div>
+          )}
 
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Orang Tua</h3>
@@ -1396,10 +1456,10 @@ const App = () => {
     setView('admin');
   };
 
-  const handleLogin = async (wa: string, nickname: string) => {
+  const handleLogin = async (wa: string, nickname: string, childCount: number) => {
     setLoading(true);
     try {
-      const data = await SheetService.checkMemberStatus(wa, nickname);
+      const data = await SheetService.checkMemberStatus(wa, nickname, childCount);
       setMember(data);
     } catch (e) {
       alert("Gagal memuat data. " + e);
@@ -1424,7 +1484,7 @@ const App = () => {
   const handleCheckStatus = async () => {
     if (!member) return;
     try {
-      const data = await SheetService.checkMemberStatus(member.whatsapp);
+      const data = await SheetService.checkMemberStatus(member.whatsapp, undefined, member.childCount);
       if (data.status !== member.status) {
         setMember(data);
       }
@@ -1483,30 +1543,33 @@ const App = () => {
                                 Terima kasih telah mendaftar ulang. Sampai jumpa di latihan berikutnya!
                             </p>
                         </div>
-                        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 max-w-sm mx-auto text-left space-y-3">
-                            <div className="border-b pb-2 mb-2">
+                        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 max-w-sm mx-auto text-left space-y-4">
+                            <div className="border-b pb-2 mb-2 flex justify-between items-center">
                                 <p className="text-xs text-slate-400 uppercase tracking-wide">Member Card</p>
+                                {member.childCount === 2 && <span className="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded font-bold">2 Rider</span>}
                             </div>
+                            
+                            {/* CHILD 1 */}
                             <div>
-                                <p className="text-xs text-slate-500">Nama Lengkap</p>
-                                <p className="font-bold text-slate-800 text-lg uppercase">{member.fullName}</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-xs text-slate-500">Panggilan</p>
-                                    <p className="font-bold text-slate-800 text-lg uppercase">{member.nickname}</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Anak 1</p>
+                                <p className="font-bold text-slate-800 text-lg uppercase">{member.nickname}</p>
+                                <div className="flex gap-4 mt-1 text-sm text-slate-600">
+                                   <span>Size: <strong>{member.shirtSize}</strong></span>
+                                   <span>Gender: <strong>{member.gender}</strong></span>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-slate-500">Ukuran</p>
-                                    <p className="font-bold text-slate-800 text-lg">{member.shirtSize}</p>
-                                </div>
-                                {member.gender && (
-                                  <div className="col-span-2 border-t pt-2 mt-2">
-                                    <p className="text-xs text-slate-500">Gender</p>
-                                    <p className="font-bold text-slate-800 text-lg">{member.gender === 'BOY' ? 'BOYS' : 'GIRLS'}</p>
-                                  </div>
-                                )}
                             </div>
+
+                            {/* CHILD 2 */}
+                            {member.childCount === 2 && (
+                              <div className="border-t pt-3">
+                                <p className="text-xs font-bold text-slate-400 uppercase mb-1">Anak 2</p>
+                                <p className="font-bold text-slate-800 text-lg uppercase">{member.nickname2}</p>
+                                <div className="flex gap-4 mt-1 text-sm text-slate-600">
+                                   <span>Size: <strong>{member.shirtSize2}</strong></span>
+                                   <span>Gender: <strong>{member.gender2}</strong></span>
+                                </div>
+                              </div>
+                            )}
                         </div>
                         
                         {WA_GROUP_LINK && (

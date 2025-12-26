@@ -187,11 +187,9 @@ function handleCheckStatus(sheet, colMap, params) {
     
     return getMemberAtRow(sheet, colMap, newRowIdx);
   } else {
-    // If updating child count for existing new member
+    // If updating childCount in existing 'NEW' record
     var m = getMemberAtRow(sheet, colMap, rowIndex);
-    if (m.status === 'NEW' && m.childCount !== childCount) {
-       // Update logic if needed, but for now just return existing
-    }
+    // Optional: Logic to update childCount/Price if needed
     return m;
   }
 }
@@ -985,7 +983,7 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
     setLoading(true);
     // Sanitize input before sending
     const cleanNumber = sanitizePhoneNumber(phone);
-    const cleanNick = nickname.toUpperCase();
+    const cleanNick = nickname.toUpperCase(); // Force uppercase on submit
     await onLogin(cleanNumber, cleanNick, childCount);
     setLoading(false);
   };
@@ -1040,7 +1038,7 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
             className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition font-medium uppercase placeholder:normal-case placeholder:text-slate-400"
             placeholder="Contoh: BUDI"
             value={nickname}
-            onChange={(e) => setNickname(e.target.value.toUpperCase())}
+            onChange={(e) => setNickname(e.target.value)} // removed toUpperCase()
             required
             autoCapitalize="characters"
           />
@@ -1193,13 +1191,9 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
   }, [sameAddress, formData.addressKK]);
 
   const handleChange = (field: keyof MemberData, value: any) => {
-    let finalValue = value;
+    // REMOVED: Immediate toUpperCase() to prevent mobile keyboard glitches
+    // Logic moved to handleSubmit
     
-    // Force uppercase for text fields
-    if (typeof value === 'string' && !field.includes('birthDate') && !field.includes('shirtSize') && !field.includes('gender')) {
-        finalValue = value.toUpperCase();
-    }
-
     // --- Sync Logic: Date Picker -> Dropdown (Child 1) ---
     if (field === 'birthDate') {
         const year = parseInt(value.split('-')[0]);
@@ -1216,12 +1210,32 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
     // --- Sync Logic: Dropdown -> Date Picker (Child 2) ---
     if (field === 'birthYear2') { setFormData(prev => ({ ...prev, [field]: value, birthDate2: '' })); return; }
 
-    setFormData(prev => ({ ...prev, [field]: finalValue }));
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // --- FORCE UPPERCASE ON SUBMIT ---
+    // This ensures data entering the spreadsheet is clean and capitalized,
+    // while allowing the user to type naturally on mobile keyboards without glitches.
+    const cleanData = { ...formData };
+    
+    // List of keys to uppercase
+    const textKeys: (keyof MemberData)[] = [
+      'fullName', 'nickname', 'fullName2', 'nickname2', 
+      'fatherName', 'motherName', 'addressKK', 'addressDomicile'
+    ];
+
+    textKeys.forEach(key => {
+      const val = cleanData[key];
+      if (typeof val === 'string') {
+        // @ts-ignore
+        cleanData[key] = val.toUpperCase();
+      }
+    });
+
+    onSubmit(cleanData);
   };
 
   return (

@@ -34,7 +34,7 @@ const MONTHS = [
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v6 (Support 2 Children & Dynamic Pricing)
+// Versi: v7 (Fix Backward Compatibility for Old Data)
 
 var FIELD_MAPPING = [
   { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
@@ -43,15 +43,15 @@ var FIELD_MAPPING = [
   { key: "paymentAmount", label: "Nominal Transfer", aliases: ["PaymentAmount", "Jumlah", "Harga"] },
   { key: "paymentCode", label: "Kode Unik", aliases: ["PaymentCode", "Kode"] },
   { key: "paymentMethod", label: "Metode Bayar", aliases: ["PaymentMethod", "Via"] },
-  { key: "childCount", label: "Jumlah Anak", aliases: ["ChildCount", "Jml Anak"] },
+  { key: "childCount", label: "Jumlah Anak", aliases: ["ChildCount", "Jml Anak", "Jumlah"] },
   
-  // Child 1
-  { key: "fullName", label: "Nama Lengkap Anak 1", aliases: ["FullName", "Nama Lengkap"] },
-  { key: "nickname", label: "Nama Panggilan 1", aliases: ["Nickname", "Panggilan"] },
-  { key: "gender", label: "Jenis Kelamin 1", aliases: ["Gender", "JK"] },
-  { key: "birthYear", label: "Tahun Lahir 1", aliases: ["BirthYear", "Tahun"] },
-  { key: "birthDate", label: "Tanggal Lahir 1", aliases: ["BirthDate", "Tgl Lahir"] },
-  { key: "shirtSize", label: "Ukuran Baju 1", aliases: ["ShirtSize", "Jersey", "Size"] },
+  // Child 1 (Added aliases for old column names without "1")
+  { key: "fullName", label: "Nama Lengkap Anak 1", aliases: ["FullName", "Nama Lengkap", "Nama Lengkap Anak"] },
+  { key: "nickname", label: "Nama Panggilan 1", aliases: ["Nickname", "Panggilan", "Nama Panggilan"] },
+  { key: "gender", label: "Jenis Kelamin 1", aliases: ["Gender", "JK", "Jenis Kelamin"] },
+  { key: "birthYear", label: "Tahun Lahir 1", aliases: ["BirthYear", "Tahun", "Tahun Lahir"] },
+  { key: "birthDate", label: "Tanggal Lahir 1", aliases: ["BirthDate", "Tgl Lahir", "Tanggal Lahir"] },
+  { key: "shirtSize", label: "Ukuran Baju 1", aliases: ["ShirtSize", "Jersey", "Size", "Ukuran Baju"] },
 
   // Child 2 (Optional)
   { key: "fullName2", label: "Nama Lengkap Anak 2", aliases: ["FullName2"] },
@@ -114,17 +114,29 @@ function setupColumns(sheet) {
   }
   var map = {};
   var headersChanged = false;
+  
   for (var i = 0; i < FIELD_MAPPING.length; i++) {
     var field = FIELD_MAPPING[i];
     var foundIndex = -1;
+    
+    // 1. Check exact label
     var idx = headers.indexOf(field.label);
-    if (idx > -1) foundIndex = idx + 1;
+    if (idx > -1) {
+      foundIndex = idx + 1;
+    }
+    
+    // 2. Check aliases if label not found
     if (foundIndex === -1 && field.aliases) {
       for (var j = 0; j < field.aliases.length; j++) {
         var aliasIdx = headers.indexOf(field.aliases[j]);
-        if (aliasIdx > -1) { foundIndex = aliasIdx + 1; break; }
+        if (aliasIdx > -1) {
+          foundIndex = aliasIdx + 1;
+          break;
+        }
       }
     }
+    
+    // 3. Create new if missing
     if (foundIndex === -1) {
       var newColIdx = headers.length + 1;
       sheet.getRange(1, newColIdx).setValue(field.label);
@@ -134,6 +146,7 @@ function setupColumns(sheet) {
     }
     map[field.key] = foundIndex;
   }
+  
   if (headersChanged) sheet.getRange(1, 1, 1, sheet.getLastColumn()).setFontWeight("bold");
   return map;
 }
@@ -174,7 +187,12 @@ function handleCheckStatus(sheet, colMap, params) {
     
     return getMemberAtRow(sheet, colMap, newRowIdx);
   } else {
-    return getMemberAtRow(sheet, colMap, rowIndex);
+    // If updating child count for existing new member
+    var m = getMemberAtRow(sheet, colMap, rowIndex);
+    if (m.status === 'NEW' && m.childCount !== childCount) {
+       // Update logic if needed, but for now just return existing
+    }
+    return m;
   }
 }
 
@@ -186,7 +204,6 @@ function handleConfirmPayment(sheet, colMap, params) {
   sheet.getRange(rowIndex, colMap['paymentMethod']).setValue(params.method);
   
   if (params.method === "CASH") {
-     // Re-calculate base price incase it was modified or just for safety
      var currentChildCount = sheet.getRange(rowIndex, colMap['childCount']).getValue() || 1;
      var basePrice = currentChildCount == 2 ? 300000 : 200000;
      sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(basePrice);
@@ -243,9 +260,19 @@ function rowToMember(rowArray, colMap) {
     if (idx < rowArray.length) {
       var val = rowArray[idx];
       if (key === 'whatsapp') val = String(val).replace(/'/g, '');
+      
+      // Default childCount to 1 if empty (legacy data)
+      if (key === 'childCount') {
+         if (val === "" || val === null || val === undefined) val = 1;
+         else val = Number(val);
+      }
+      
       m[key] = val;
     }
   }
+  // Fallback for childCount if column didn't exist in range
+  if (!m.childCount) m.childCount = 1;
+  
   return m;
 }
 
@@ -455,7 +482,7 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
             <ol className="list-decimal ml-4 space-y-1">
               <li>Klik tombol <strong>Deploy</strong> (kanan atas) &gt; <strong>New Deployment</strong>.</li>
               <li>Pilih type: <strong>Web app</strong>.</li>
-              <li>Description: "v6".</li>
+              <li>Description: "v7".</li>
               <li>Execute as: <strong>Me</strong> (email anda).</li>
               <li>Who has access: <strong>Anyone</strong> (PENTING!).</li>
               <li>Klik <strong>Deploy</strong>, lalu salin <strong>Web App URL</strong>.</li>

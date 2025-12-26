@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MemberData, UserStatus, ShirtSize, BIRTH_YEARS, PaymentMethod } from './types';
 import * as SheetService from './services/sheetService';
-import GeminiChat from './components/GeminiChat';
 import QRCode from 'react-qr-code';
 
 // --- KONFIGURASI APLIKASI ---
@@ -1647,7 +1646,6 @@ const App = () => {
        </main>
 
        <Footer logoUrl={appLogo} />
-       <GeminiChat />
        <AdminLoginModal isOpen={showAdminLogin} onClose={() => setShowAdminLogin(false)} onSuccess={handleAdminSuccess} />
     </div>
   );

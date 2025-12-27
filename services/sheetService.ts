@@ -84,7 +84,21 @@ export const checkMemberStatus = async (whatsapp: string, nickname?: string, chi
   const db = getDB();
   
   if (db[whatsapp]) {
-    return db[whatsapp];
+    const existing = db[whatsapp];
+    // LOGIC FIX: If member exists but is NEW, allow updating child count and price
+    if (existing.status === UserStatus.NEW && existing.childCount !== childCount) {
+       const basePrice = childCount === 2 ? 300000 : 200000;
+       const randomDigits = existing.paymentCode || Math.floor(Math.random() * 90 + 10);
+       
+       existing.childCount = childCount;
+       existing.paymentAmount = basePrice + randomDigits;
+       // Also update nickname if provided
+       if(nickname) existing.nickname = nickname;
+       
+       saveDB(db);
+       return existing;
+    }
+    return existing;
   }
 
   const basePrice = childCount === 2 ? 300000 : 200000;

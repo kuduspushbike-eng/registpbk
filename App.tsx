@@ -33,7 +33,7 @@ const MONTHS = [
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v7 (Fix Backward Compatibility for Old Data)
+// Versi: v8 (Fix Update Price for Re-entry)
 
 var FIELD_MAPPING = [
   { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
@@ -166,7 +166,7 @@ function getAllMembers(sheet, colMap) {
 function handleCheckStatus(sheet, colMap, params) {
   var wa = params.whatsapp;
   var nickname = params.nickname || "";
-  var childCount = params.childCount || 1;
+  var childCount = Number(params.childCount) || 1;
   var rowIndex = findRowIndex(sheet, colMap, wa);
   
   if (rowIndex == -1) {
@@ -186,9 +186,34 @@ function handleCheckStatus(sheet, colMap, params) {
     
     return getMemberAtRow(sheet, colMap, newRowIdx);
   } else {
-    // If updating childCount in existing 'NEW' record
+    // Member Exists. Check if we need to update childCount/Price
     var m = getMemberAtRow(sheet, colMap, rowIndex);
-    // Optional: Logic to update childCount/Price if needed
+    
+    // Only update if status is 'NEW' and childCount is different
+    if (m.status === 'NEW') {
+       var currentCount = Number(m.childCount) || 1;
+       if (currentCount !== childCount) {
+          var basePrice = childCount == 2 ? 300000 : 200000;
+          // Keep existing code if possible, or generate new
+          var code = m.paymentCode || Math.floor(Math.random() * 90 + 10); 
+          var newAmount = basePrice + code;
+          
+          sheet.getRange(rowIndex, colMap['childCount']).setValue(childCount);
+          sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(newAmount);
+          sheet.getRange(rowIndex, colMap['paymentCode']).setValue(code); // Ensure code exists
+          
+          // Update the object to return
+          m.childCount = childCount;
+          m.paymentAmount = newAmount;
+          m.paymentCode = code;
+       }
+       // Also update nickname if provided and different
+       if (nickname && m.nickname !== nickname) {
+          sheet.getRange(rowIndex, colMap['nickname']).setValue(nickname);
+          m.nickname = nickname;
+       }
+    }
+    
     return m;
   }
 }
@@ -479,7 +504,7 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
             <ol className="list-decimal ml-4 space-y-1">
               <li>Klik tombol <strong>Deploy</strong> (kanan atas) &gt; <strong>New Deployment</strong>.</li>
               <li>Pilih type: <strong>Web app</strong>.</li>
-              <li>Description: "v7".</li>
+              <li>Description: "v8".</li>
               <li>Execute as: <strong>Me</strong> (email anda).</li>
               <li>Who has access: <strong>Anyone</strong> (PENTING!).</li>
               <li>Klik <strong>Deploy</strong>, lalu salin <strong>Web App URL</strong>.</li>

@@ -3,6 +3,7 @@ import { MemberData, UserStatus, ShirtSize, BIRTH_YEARS, PaymentMethod } from '.
 import * as SheetService from './services/sheetService';
 import QRCode from 'react-qr-code';
 import GeminiChat from './components/GeminiChat';
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 // --- KONFIGURASI APLIKASI ---
 
@@ -1788,6 +1789,7 @@ const App = () => {
        <Footer logoUrl={appLogo} />
        <GeminiChat />
        <AdminLoginModal isOpen={showAdminLogin} onClose={() => setShowAdminLogin(false)} onSuccess={handleAdminSuccess} />
+       <SpeedInsights />
     </div>
   );
 };

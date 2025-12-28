@@ -9,7 +9,7 @@ import QRCode from 'react-qr-code';
 const BANK_INFO = {
   bankName: "Bank BNI",
   accountNumber: "0290945110",
-  accountHolder: "a.n Indah Hari Utami"
+  accountHolder: "a/n Indah Hari Utami"
 };
 
 // 2. PIN UNTUK MASUK HALAMAN ADMIN
@@ -1258,6 +1258,18 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
         cleanData[key] = val.toUpperCase();
       }
     });
+
+    // --- FIX: REMOVE CHILD 2 DEFAULTS IF 1 RIDER ---
+    // Jika user hanya memilih 1 rider, kita hapus data default anak ke-2 
+    // agar tidak ikut tersimpan ke spreadsheet.
+    if (initialData.childCount === 1) {
+        delete cleanData.fullName2;
+        delete cleanData.nickname2;
+        delete cleanData.gender2;
+        delete cleanData.birthYear2;
+        delete cleanData.birthDate2;
+        delete cleanData.shirtSize2;
+    }
 
     onSubmit(cleanData);
   };

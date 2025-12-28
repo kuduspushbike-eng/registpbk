@@ -215,3 +215,14 @@ export const wipeAllData = async (): Promise<void> => {
   await delay(1000);
   localStorage.removeItem(STORAGE_KEY);
 };
+
+export const syncColors = async (): Promise<{success: boolean, count: number}> => {
+  // 1. REAL MODE
+  if (getActiveUrl()) {
+    return await callScript('sync_colors');
+  }
+
+  // 2. MOCK MODE
+  await delay(500);
+  return { success: true, count: 0 };
+};

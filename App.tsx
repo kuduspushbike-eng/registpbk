@@ -4,7 +4,6 @@ import * as SheetService from './services/sheetService';
 import QRCode from 'react-qr-code';
 import GeminiChat from './components/GeminiChat';
 import { SpeedInsights } from "@vercel/speed-insights/react";
-import { Analytics } from "@vercel/analytics/react";
 
 // --- KONFIGURASI APLIKASI ---
 
@@ -40,7 +39,7 @@ const MONTHS = [
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v9 (Auto Color Rows A-AC)
+// Versi: v10 (Sync Colors Added)
 
 var FIELD_MAPPING = [
   { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
@@ -97,6 +96,8 @@ function doPost(e) {
       result = handleAdminApprove(sheet, colMap, params);
     } else if (action == "submit_registration") {
       result = handleSubmitRegistration(sheet, colMap, params);
+    } else if (action == "sync_colors") {
+      result = handleSyncColors(sheet, colMap);
     } else if (action == "wipe_all") {
       sheet.clearContents();
       sheet.setBackground(null); // Clear colors
@@ -271,6 +272,26 @@ function handleSubmitRegistration(sheet, colMap, params) {
   updateRowColor(sheet, rowIndex, "REGISTERED");
   
   return getMemberAtRow(sheet, colMap, rowIndex);
+}
+
+function handleSyncColors(sheet, colMap) {
+  var data = sheet.getDataRange().getValues();
+  var statusColIdx = colMap['status'] - 1;
+  var count = 0;
+  
+  if (statusColIdx < 0) return {success: false, message: "Status column not found"};
+  
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (row.length > statusColIdx) {
+      var status = row[statusColIdx];
+      if (status) {
+        updateRowColor(sheet, i + 1, status);
+        count++;
+      }
+    }
+  }
+  return {success: true, count: count};
 }
 
 function updateRowColor(sheet, rowIdx, status) {
@@ -540,20 +561,6 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
             </p>
           </div>
 
-          <div className="bg-slate-800 text-white p-4 rounded-lg border border-slate-700">
-            <h4 className="font-bold text-white mb-2 flex items-center gap-2">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-               Aktivasi Speed Insights & Web Analytics (Vercel)
-            </h4>
-            <p className="text-xs text-slate-300 mb-2">Kode Speed Insights & Analytics sudah terpasang. Agar data muncul:</p>
-            <ol className="list-decimal ml-4 space-y-1 text-xs text-slate-300">
-              <li>Deploy/Push aplikasi ini ke Vercel.</li>
-              <li>Buka Dashboard Project di Vercel.</li>
-              <li>Klik tab <strong>Speed Insights</strong>, lalu klik <strong>Enable</strong>.</li>
-              <li>Klik tab <strong>Analytics</strong>, lalu klik <strong>Enable</strong>.</li>
-            </ol>
-          </div>
-
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
             <h4 className="font-bold text-blue-800 mb-2">Langkah 1: Siapkan Google Sheet</h4>
             <ol className="list-decimal ml-4 space-y-1">
@@ -616,6 +623,7 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
   const [logoInput, setLogoInput] = useState(SheetService.getLogoUrl(DEFAULT_APP_LOGO));
 
   const [wiping, setWiping] = useState(false);
+  const [syncingColors, setSyncingColors] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -684,6 +692,21 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
           setWiping(false);
         }
       }
+    }
+  };
+
+  const handleSyncColors = async () => {
+    if (!configUrl) return alert("Hanya tersedia saat terhubung ke Google Sheet.");
+    if(!window.confirm("Ini akan mewarnai ulang semua baris di Google Sheet sesuai statusnya.\n\nProses ini mungkin memakan waktu beberapa saat tergantung jumlah data.\n\nLanjutkan?")) return;
+
+    setSyncingColors(true);
+    try {
+      const res = await SheetService.syncColors();
+      alert(`Berhasil! ${res.count} baris telah diwarnai ulang.`);
+    } catch(e) {
+      alert("Gagal: " + e);
+    } finally {
+      setSyncingColors(false);
     }
   };
 
@@ -1010,6 +1033,13 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
                     <button onClick={() => setShowQR(true)} className="flex-1 bg-slate-800 text-white font-medium text-xs hover:bg-slate-900 border border-slate-800 px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 shadow transition">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
                       QR Code
+                    </button>
+                    <button 
+                      onClick={handleSyncColors} 
+                      disabled={syncingColors}
+                      className="w-full bg-purple-50 text-purple-700 font-medium text-xs hover:bg-purple-100 border border-purple-200 px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 transition"
+                    >
+                      {syncingColors ? 'Memproses...' : 'Warnai Ulang Data Lama'}
                     </button>
                   </>
                 )}
@@ -1520,6 +1550,33 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
                 </div>
             </div>
           )}
+
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Orang Tua</h3>
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ayah</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.fatherName} 
+                  onChange={e => handleChange('fatherName', e.target.value)} 
+                  autoCapitalize="characters"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ibu</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
+                  value={formData.motherName} 
+                  onChange={e => handleChange('motherName', e.target.value)} 
+                  autoCapitalize="characters"
+                />
+              </div>
+          </div>
 
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Alamat</h3>

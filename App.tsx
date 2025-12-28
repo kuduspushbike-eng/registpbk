@@ -4,6 +4,7 @@ import * as SheetService from './services/sheetService';
 import QRCode from 'react-qr-code';
 import GeminiChat from './components/GeminiChat';
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { Analytics } from "@vercel/analytics/react";
 
 // --- KONFIGURASI APLIKASI ---
 
@@ -537,6 +538,20 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
             <p className="mt-2 text-xs italic bg-white p-2 rounded border border-purple-100">
                ✨ Dengan cara ini, URL Web App Anda <strong>TIDAK AKAN BERUBAH</strong> selamanya. Anda tidak perlu update kode React lagi meskipun mengubah logika Google Sheet.
             </p>
+          </div>
+
+          <div className="bg-slate-800 text-white p-4 rounded-lg border border-slate-700">
+            <h4 className="font-bold text-white mb-2 flex items-center gap-2">
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+               Aktivasi Speed Insights & Web Analytics (Vercel)
+            </h4>
+            <p className="text-xs text-slate-300 mb-2">Kode Speed Insights & Analytics sudah terpasang. Agar data muncul:</p>
+            <ol className="list-decimal ml-4 space-y-1 text-xs text-slate-300">
+              <li>Deploy/Push aplikasi ini ke Vercel.</li>
+              <li>Buka Dashboard Project di Vercel.</li>
+              <li>Klik tab <strong>Speed Insights</strong>, lalu klik <strong>Enable</strong>.</li>
+              <li>Klik tab <strong>Analytics</strong>, lalu klik <strong>Enable</strong>.</li>
+            </ol>
           </div>
 
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
@@ -1505,33 +1520,6 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
                 </div>
             </div>
           )}
-
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Data Orang Tua</h3>
-              
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ayah</label>
-                <input 
-                  type="text" 
-                  required 
-                  className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                  value={formData.fatherName} 
-                  onChange={e => handleChange('fatherName', e.target.value)} 
-                  autoCapitalize="characters"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Ibu</label>
-                <input 
-                  type="text" 
-                  required 
-                  className="uppercase w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" 
-                  value={formData.motherName} 
-                  onChange={e => handleChange('motherName', e.target.value)} 
-                  autoCapitalize="characters"
-                />
-              </div>
-          </div>
 
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-sm font-bold text-orange-600 uppercase tracking-wider border-b pb-2">Alamat</h3>

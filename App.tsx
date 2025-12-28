@@ -2,26 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { MemberData, UserStatus, ShirtSize, BIRTH_YEARS, PaymentMethod } from './types';
 import * as SheetService from './services/sheetService';
 import QRCode from 'react-qr-code';
+import GeminiChat from './components/GeminiChat';
 
 // --- KONFIGURASI APLIKASI ---
 
-// 1. UBAH DATA REKENING BANK DISINI
+// 1. MASUKKAN URL GOOGLE SCRIPT DISINI AGAR LINK SHARE JADI PENDEK
+// Contoh: "https://script.google.com/macros/s/AKfycbx.../exec"
+const FIXED_SCRIPT_URL = ""; 
+
+// 2. UBAH DATA REKENING BANK DISINI
 const BANK_INFO = {
   bankName: "Bank BNI",
   accountNumber: "0290945110",
-  accountHolder: "a/n Indah Hari Utami"
+  accountHolder: "a.n Indah Hari Utami"
 };
 
-// 2. PIN UNTUK MASUK HALAMAN ADMIN
+// 3. PIN UNTUK MASUK HALAMAN ADMIN
 const ADMIN_PIN = "757515"; 
 
-// 3. LINK GRUP WHATSAPP (Isi link di dalam tanda kutip, kosongkan jika belum ada)
+// 4. LINK GRUP WHATSAPP (Isi link di dalam tanda kutip, kosongkan jika belum ada)
 const WA_GROUP_LINK = "https://chat.whatsapp.com/FaZDznBOKxSGEqHEMC9FkS"; 
 
-// 4. URL LOGO APLIKASI (Ganti link gambar disini)
+// 5. URL LOGO APLIKASI (Ganti link gambar disini)
 const DEFAULT_APP_LOGO = "https://i.ibb.co.com/1YLtbnnD/logo-new-2.png";
 
-// 5. URL GAMBAR SIZE CHART
+// 6. URL GAMBAR SIZE CHART
 const SIZE_CHART_URL = "https://i.ibb.co.com/6cDkDj4Y/size-charrt.jpg";
 
 const MONTHS = [
@@ -33,7 +38,7 @@ const MONTHS = [
 const GOOGLE_SCRIPT_CODE = `
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v8 (Fix Update Price for Re-entry)
+// Versi: v9 (Auto Color Rows A-AC)
 
 var FIELD_MAPPING = [
   { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
@@ -92,6 +97,7 @@ function doPost(e) {
       result = handleSubmitRegistration(sheet, colMap, params);
     } else if (action == "wipe_all") {
       sheet.clearContents();
+      sheet.setBackground(null); // Clear colors
       setupColumns(sheet);
       result = {success: true};
     }
@@ -184,30 +190,29 @@ function handleCheckStatus(sheet, colMap, params) {
     sheet.getRange(newRowIdx, colMap['childCount']).setValue(childCount);
     if(nickname) sheet.getRange(newRowIdx, colMap['nickname']).setValue(nickname);
     
+    // Set Color for NEW
+    updateRowColor(sheet, newRowIdx, "NEW");
+    
     return getMemberAtRow(sheet, colMap, newRowIdx);
   } else {
     // Member Exists. Check if we need to update childCount/Price
     var m = getMemberAtRow(sheet, colMap, rowIndex);
     
-    // Only update if status is 'NEW' and childCount is different
     if (m.status === 'NEW') {
        var currentCount = Number(m.childCount) || 1;
        if (currentCount !== childCount) {
           var basePrice = childCount == 2 ? 300000 : 200000;
-          // Keep existing code if possible, or generate new
           var code = m.paymentCode || Math.floor(Math.random() * 90 + 10); 
           var newAmount = basePrice + code;
           
           sheet.getRange(rowIndex, colMap['childCount']).setValue(childCount);
           sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(newAmount);
-          sheet.getRange(rowIndex, colMap['paymentCode']).setValue(code); // Ensure code exists
+          sheet.getRange(rowIndex, colMap['paymentCode']).setValue(code); 
           
-          // Update the object to return
           m.childCount = childCount;
           m.paymentAmount = newAmount;
           m.paymentCode = code;
        }
-       // Also update nickname if provided and different
        if (nickname && m.nickname !== nickname) {
           sheet.getRange(rowIndex, colMap['nickname']).setValue(nickname);
           m.nickname = nickname;
@@ -230,13 +235,22 @@ function handleConfirmPayment(sheet, colMap, params) {
      var basePrice = currentChildCount == 2 ? 300000 : 200000;
      sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(basePrice);
   }
+  
+  // Set Color for WAITING_APPROVAL
+  updateRowColor(sheet, rowIndex, "WAITING_APPROVAL");
+  
   return getMemberAtRow(sheet, colMap, rowIndex);
 }
 
 function handleAdminApprove(sheet, colMap, params) {
   var rowIndex = findRowIndex(sheet, colMap, params.whatsapp);
   if (rowIndex == -1) throw "Member not found";
+  
   sheet.getRange(rowIndex, colMap['status']).setValue("APPROVED");
+  
+  // Set Color for APPROVED
+  updateRowColor(sheet, rowIndex, "APPROVED");
+  
   return getMemberAtRow(sheet, colMap, rowIndex);
 }
 
@@ -250,7 +264,31 @@ function handleSubmitRegistration(sheet, colMap, params) {
       sheet.getRange(rowIndex, colMap[key]).setValue(data[key]);
     }
   }
+  
+  // Set Color for REGISTERED
+  updateRowColor(sheet, rowIndex, "REGISTERED");
+  
   return getMemberAtRow(sheet, colMap, rowIndex);
+}
+
+function updateRowColor(sheet, rowIdx, status) {
+  var color = "#ffffff"; // Default (NEW) - White
+  
+  if (status === "WAITING_APPROVAL") {
+    color = "#fff9c4"; // Light Yellow
+  } else if (status === "APPROVED") {
+    color = "#bbdefb"; // Light Blue
+  } else if (status === "REGISTERED") {
+    color = "#c8e6c9"; // Light Green
+  }
+  
+  // Color range from Column 1 (A) to 29 (AC)
+  try {
+    sheet.getRange(rowIdx, 1, 1, 29).setBackground(color);
+  } catch(e) {
+    // Fallback if less columns exist
+    sheet.getRange(rowIdx, 1, 1, sheet.getLastColumn()).setBackground(color);
+  }
 }
 
 function findRowIndex(sheet, colMap, wa) {
@@ -477,6 +515,29 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
         </div>
         
         <div className="p-6 overflow-y-auto space-y-6 text-sm text-slate-600">
+          
+          {/* CARA UPDATE TANPA GANTI LINK */}
+          <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+            <h4 className="font-bold text-purple-800 mb-2 flex items-center gap-2">
+              <span className="bg-purple-200 text-purple-800 text-xs px-2 py-0.5 rounded">TIPS PRO</span>
+              Link Pendek Permanen & Update Tanpa Ganti URL
+            </h4>
+            <p className="mb-2">
+              <strong>Solusi Link Panjang:</strong> Masukkan URL Google Script Anda ke dalam variabel <code>FIXED_SCRIPT_URL</code> di kode aplikasi (App.tsx). 
+              Dengan begitu link aplikasi Anda akan bersih (misal: <code>myapp.vercel.app</code>) tanpa buntut panjang.
+            </p>
+            <p className="mb-2 mt-3 font-bold">Cara Update Script di Masa Depan:</p>
+            <ol className="list-decimal ml-4 space-y-1">
+              <li>Di Google Apps Script, klik tombol <strong>Deploy</strong> (Biru) &gt; <strong>Manage deployments</strong>.</li>
+              <li>Klik ikon <strong>Edit</strong> (Pensil) pada deployment yang sedang aktif ("Active").</li>
+              <li>Pada bagian <strong>Version</strong>, ubah dari versi lama menjadi <strong>"New version"</strong>.</li>
+              <li>Klik <strong>Deploy</strong>.</li>
+            </ol>
+            <p className="mt-2 text-xs italic bg-white p-2 rounded border border-purple-100">
+               ✨ Dengan cara ini, URL Web App Anda <strong>TIDAK AKAN BERUBAH</strong> selamanya. Anda tidak perlu update kode React lagi meskipun mengubah logika Google Sheet.
+            </p>
+          </div>
+
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
             <h4 className="font-bold text-blue-800 mb-2">Langkah 1: Siapkan Google Sheet</h4>
             <ol className="list-decimal ml-4 space-y-1">
@@ -504,11 +565,11 @@ const IntegrationGuideModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: 
             <ol className="list-decimal ml-4 space-y-1">
               <li>Klik tombol <strong>Deploy</strong> (kanan atas) &gt; <strong>New Deployment</strong>.</li>
               <li>Pilih type: <strong>Web app</strong>.</li>
-              <li>Description: "v8".</li>
+              <li>Description: "v9 Color".</li>
               <li>Execute as: <strong>Me</strong> (email anda).</li>
               <li>Who has access: <strong>Anyone</strong> (PENTING!).</li>
               <li>Klik <strong>Deploy</strong>, lalu salin <strong>Web App URL</strong>.</li>
-              <li>Paste URL tersebut ke kolom konfigurasi di Dashboard Admin aplikasi ini.</li>
+              <li>Paste URL tersebut di kolom konfigurasi Admin atau <strong>Hardcode di file App.tsx (FIXED_SCRIPT_URL)</strong> agar link pendek.</li>
             </ol>
           </div>
         </div>
@@ -627,6 +688,13 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
   // Logic untuk membuat URL Share yang mengandung Config dan Logo
   const getShareUrl = () => {
     const baseUrl = window.location.href.split('?')[0];
+    
+    // Jika URL Script di kode (FIXED_SCRIPT_URL) sama dengan yang aktif sekarang,
+    // Kita tidak perlu menempelkan parameter config di URL share. Link jadi pendek!
+    if (FIXED_SCRIPT_URL && configUrl === FIXED_SCRIPT_URL) {
+      return baseUrl;
+    }
+
     const params = new URLSearchParams();
     
     if (configUrl) {
@@ -907,7 +975,10 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
             <div className="space-y-4">
                <div className="flex items-center gap-2 p-2 bg-slate-50 rounded border border-slate-100">
                   <div className={`w-3 h-3 rounded-full shadow-sm ${configUrl ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
-                  <div className="text-sm font-medium text-slate-700 flex-1">{configUrl ? 'Terhubung ke Google Sheet' : 'Mode Demo (Lokal Storage)'}</div>
+                  <div className="text-sm font-medium text-slate-700 flex-1">
+                    {configUrl ? 'Terhubung ke Google Sheet' : 'Mode Demo (Lokal Storage)'}
+                    {FIXED_SCRIPT_URL && configUrl === FIXED_SCRIPT_URL && <span className="text-[10px] ml-2 bg-slate-100 px-2 py-0.5 rounded border text-slate-500">Hardcoded</span>}
+                  </div>
                   <button onClick={() => { setUrlInput(configUrl); setIsEditingConfig(true); }} className="text-xs bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 text-slate-600">
                     Ubah
                   </button>
@@ -1496,6 +1567,12 @@ const App = () => {
 
   // Check URL for config
   useEffect(() => {
+    // 1. Check if hardcoded URL exists
+    if (FIXED_SCRIPT_URL) {
+      SheetService.setScriptUrl(FIXED_SCRIPT_URL);
+    }
+
+    // 2. Override with URL params if exists (for flexibility)
     const params = new URLSearchParams(window.location.search);
     const config = params.get('config');
     const logo = params.get('logo');
@@ -1509,8 +1586,8 @@ const App = () => {
       setAppLogo(logo);
     }
     
+    // Clean URL only if params exist
     if (config || logo) {
-       // Clean URL
        window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
@@ -1683,6 +1760,7 @@ const App = () => {
        </main>
 
        <Footer logoUrl={appLogo} />
+       <GeminiChat />
        <AdminLoginModal isOpen={showAdminLogin} onClose={() => setShowAdminLogin(false)} onSuccess={handleAdminSuccess} />
     </div>
   );

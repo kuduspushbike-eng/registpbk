@@ -6,9 +6,9 @@ import GeminiChat from './components/GeminiChat';
 
 // --- KONFIGURASI APLIKASI ---
 
-// 1. MASUKKAN URL GOOGLE SCRIPT DISINI AGAR LINK SHARE JADI PENDEK
-// Contoh: "https://script.google.com/macros/s/AKfycbx.../exec"
-const FIXED_SCRIPT_URL = ""; 
+// 1. WAJIB ISI URL GOOGLE SCRIPT DISINI AGAR JALAN DI HP ORANG LAIN / INCOGNITO
+// Caranya: Deploy Google Script > Copy Web App URL > Paste di bawah ini
+const FIXED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKeR1csT7LKMc2H4X8QCAgT-uhiY8hD8YjHIY8esRwM0QPkTSIqWTL8gP-Uy6pC1G41w/exec"; 
 
 // 2. UBAH DATA REKENING BANK DISINI
 const BANK_INFO = {
@@ -1069,6 +1069,16 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
   const [nickname, setNickname] = useState('');
   const [childCount, setChildCount] = useState<number>(1);
   const [loading, setLoading] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
+
+  useEffect(() => {
+     // Check connection on mount. 
+     // We use a small timeout to allow App.tsx's main useEffect to run and set the script URL from code if available.
+     const timer = setTimeout(() => {
+        setIsDemo(!SheetService.getScriptUrl());
+     }, 500);
+     return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1092,6 +1102,22 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
           Silakan lengkapi data awal untuk memulai proses registrasi ulang member Pushbike Kudus.
         </p>
       </div>
+
+      {isDemo && (
+         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6 text-sm text-amber-800 flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div>
+               <p className="font-bold">Database Belum Terhubung</p>
+               <p className="text-xs mt-1">
+                  Aplikasi berjalan dalam <strong>Mode Offline/Demo</strong>. Data tidak akan masuk ke Google Sheet.
+                  <br/><br/>
+                  <strong>Admin:</strong> Harap masukkan URL Google Script ke dalam file <code>App.tsx</code> di variabel <code>FIXED_SCRIPT_URL</code>.
+               </p>
+            </div>
+         </div>
+      )}
       
       {/* CHILD COUNT SELECTOR */}
       <div className="bg-white p-1 rounded-xl border border-slate-200 flex shadow-sm">

@@ -1382,6 +1382,35 @@ const StepForm = ({ onSubmit, initialData }: { onSubmit: (data: Partial<MemberDa
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // --- VALIDASI MANUAL (EXTRA SAFETY) ---
+    // Memastikan field tidak kosong dan tidak hanya berisi spasi
+    const missingFields: string[] = [];
+
+    // Anak 1
+    if (!formData.fullName?.trim()) missingFields.push("Nama Lengkap Anak 1");
+    if (!formData.nickname?.trim()) missingFields.push("Nama Panggilan Anak 1");
+    if (!formData.birthDate) missingFields.push("Tanggal Lahir Anak 1");
+
+    // Anak 2 (Jika Paket 2 Anak)
+    if (initialData.childCount === 2) {
+      if (!formData.fullName2?.trim()) missingFields.push("Nama Lengkap Anak 2");
+      if (!formData.nickname2?.trim()) missingFields.push("Nama Panggilan Anak 2");
+      if (!formData.birthDate2) missingFields.push("Tanggal Lahir Anak 2");
+    }
+
+    // Orang Tua
+    if (!formData.fatherName?.trim()) missingFields.push("Nama Ayah");
+    if (!formData.motherName?.trim()) missingFields.push("Nama Ibu");
+
+    // Alamat
+    if (!formData.addressKK?.trim()) missingFields.push("Alamat KK");
+    if (!sameAddress && !formData.addressDomicile?.trim()) missingFields.push("Alamat Domisili");
+
+    if (missingFields.length > 0) {
+      alert(`Mohon lengkapi data berikut:\n\n- ${missingFields.join('\n- ')}`);
+      return;
+    }
     
     // --- FORCE UPPERCASE ON SUBMIT ---
     // This ensures data entering the spreadsheet is clean and capitalized,

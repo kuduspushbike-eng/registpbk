@@ -30,6 +30,9 @@ const DEFAULT_APP_LOGO = "https://i.ibb.co.com/1YLtbnnD/logo-new-2.png";
 // 6. URL GAMBAR SIZE CHART
 const SIZE_CHART_URL = "https://i.ibb.co.com/6cDkDj4Y/size-charrt.jpg";
 
+// 7. BATAS WAKTU PENDAFTARAN (Tahun-Bulan-Tanggal Jam:Menit:Detik)
+const DEADLINE = new Date('2026-01-06T21:00:00');
+
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
@@ -378,6 +381,21 @@ const sanitizePhoneNumber = (phone: string): string => {
     clean = '0' + clean;
   }
   return clean;
+};
+
+// Helper for countdown
+const calculateTimeLeft = () => {
+  const difference = +DEADLINE - +new Date();
+  
+  if (difference > 0) {
+    return {
+      days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((difference / 1000 / 60) % 60),
+      seconds: Math.floor((difference / 1000) % 60),
+    };
+  }
+  return null; // Expired
 };
 
 // --- Sub-components ---
@@ -1116,6 +1134,7 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
   const [childCount, setChildCount] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<{days: number, hours: number, minutes: number, seconds: number} | null>(calculateTimeLeft());
 
   useEffect(() => {
      // Check connection on mount. 
@@ -1124,6 +1143,17 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
         setIsDemo(!SheetService.getScriptUrl());
      }, 500);
      return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const tl = calculateTimeLeft();
+      setTimeLeft(tl);
+      if (!tl) {
+        clearInterval(timer);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1139,8 +1169,59 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
     setLoading(false);
   };
 
+  // IF EXPIRED: Show Locked View
+  if (!timeLeft) {
+    return (
+      <div className="animate-fade-in text-center py-12 space-y-6">
+        <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-red-100">
+           <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+           </svg>
+        </div>
+        <div className="space-y-2">
+           <h2 className="text-2xl font-bold text-slate-800">Pendaftaran Ditutup</h2>
+           <p className="text-slate-500 text-sm max-w-xs mx-auto">
+             Mohon maaf, batas waktu pendaftaran ulang telah berakhir pada tanggal 6 Januari 2026.
+           </p>
+        </div>
+        <div className="p-4 bg-slate-100 rounded-lg text-xs text-slate-500">
+           Silakan hubungi admin jika ada pertanyaan lebih lanjut.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in space-y-8 py-4">
+      {/* COUNTDOWN BANNER */}
+      <div className="bg-slate-900 rounded-xl p-4 text-white shadow-lg shadow-slate-200">
+         <div className="flex items-center justify-center gap-2 mb-3">
+            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-300">Pendaftaran Berakhir Dalam</p>
+         </div>
+         <div className="flex justify-center gap-3 text-center">
+            <div className="bg-slate-800 rounded-lg p-2 min-w-[60px]">
+               <div className="text-xl font-bold font-mono">{String(timeLeft.days).padStart(2, '0')}</div>
+               <div className="text-[9px] text-slate-400 uppercase">Hari</div>
+            </div>
+            <div className="text-xl font-bold pt-1">:</div>
+            <div className="bg-slate-800 rounded-lg p-2 min-w-[50px]">
+               <div className="text-xl font-bold font-mono">{String(timeLeft.hours).padStart(2, '0')}</div>
+               <div className="text-[9px] text-slate-400 uppercase">Jam</div>
+            </div>
+            <div className="text-xl font-bold pt-1">:</div>
+            <div className="bg-slate-800 rounded-lg p-2 min-w-[50px]">
+               <div className="text-xl font-bold font-mono">{String(timeLeft.minutes).padStart(2, '0')}</div>
+               <div className="text-[9px] text-slate-400 uppercase">Menit</div>
+            </div>
+            <div className="text-xl font-bold pt-1">:</div>
+            <div className="bg-slate-800 rounded-lg p-2 min-w-[50px] border border-slate-700">
+               <div className="text-xl font-bold font-mono text-red-400">{String(timeLeft.seconds).padStart(2, '0')}</div>
+               <div className="text-[9px] text-slate-400 uppercase">Detik</div>
+            </div>
+         </div>
+      </div>
+
       <div className="text-center space-y-3">
         <img src={logoUrl} alt="Logo" className="w-24 h-24 object-contain mx-auto mb-4 drop-shadow-md" />
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Selamat Datang</h2>

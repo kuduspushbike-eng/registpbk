@@ -33,6 +33,10 @@ const SIZE_CHART_URL = "https://i.ibb.co.com/6cDkDj4Y/size-charrt.jpg";
 // 7. BATAS WAKTU PENDAFTARAN (Tahun-Bulan-Tanggal Jam:Menit:Detik)
 const DEADLINE = new Date('2026-01-06T21:00:00');
 
+// 8. URL GAMBAR SAAT PENUTUPAN (Opsional: Isi Link Gambar untuk ditampilkan saat tutup)
+// Ganti link di bawah dengan link poster/banner Anda. Kosongkan ("") jika tidak ingin pakai gambar.
+const CLOSING_IMAGE_URL = "https://i.ibb.co.com/jPn88Nf8/Whats-App-Image-2026-01-05-at-11-47-22-PM.jpg"; 
+
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
@@ -1184,6 +1188,14 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
              Mohon maaf, batas waktu pendaftaran ulang telah berakhir pada tanggal 6 Januari 2026.
            </p>
         </div>
+        
+        {/* GAMBAR PENUTUPAN (Opsional) */}
+        {CLOSING_IMAGE_URL && (
+           <div className="w-full max-w-xs mx-auto my-4 rounded-xl overflow-hidden shadow-md border border-slate-200">
+              <img src={CLOSING_IMAGE_URL} alt="Closed" className="w-full h-auto object-cover" />
+           </div>
+        )}
+
         <div className="p-4 bg-slate-100 rounded-lg text-xs text-slate-500">
            Silakan hubungi admin jika ada pertanyaan lebih lanjut.
         </div>

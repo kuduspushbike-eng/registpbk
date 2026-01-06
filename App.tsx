@@ -35,7 +35,7 @@ const DEADLINE = new Date('2026-01-06T21:00:00');
 
 // 8. URL GAMBAR SAAT PENUTUPAN (Opsional: Isi Link Gambar untuk ditampilkan saat tutup)
 // Ganti link di bawah dengan link poster/banner Anda. Kosongkan ("") jika tidak ingin pakai gambar.
-const CLOSING_IMAGE_URL = "https://i.ibb.co.com/jPn88Nf8/Whats-App-Image-2026-01-05-at-11-47-22-PM.jpg"; 
+const CLOSING_IMAGE_URL = ""; 
 
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
@@ -963,135 +963,6 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
         </div>
       )}
 
-      {/* APPEARANCE SETTINGS SECTION */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mt-8 shadow-sm">
-        <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
-          <h3 className="font-bold text-slate-700 text-sm">Pengaturan Tampilan</h3>
-        </div>
-        
-        <div className="p-4">
-          {isEditingLogo ? (
-            <div className="space-y-3">
-               <div className="text-xs text-slate-600">
-                 Masukkan URL gambar/logo (Direct Link). Bisa gunakan link dari image hosting atau Google Drive (direct link).
-               </div>
-               <input 
-                type="text" 
-                value={logoInput}
-                onChange={(e) => setLogoInput(e.target.value)}
-                placeholder="https://example.com/logo.png"
-                className="w-full text-sm p-2 border rounded focus:ring-2 focus:ring-orange-500 outline-none transition"
-               />
-               <div className="flex gap-2 justify-end">
-                 <button onClick={() => setIsEditingLogo(false)} className="text-slate-600 text-sm px-4 py-2 hover:bg-slate-100 rounded-lg">Batal</button>
-                 <button onClick={handleSaveLogo} className="bg-orange-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-orange-700 shadow">Simpan Logo</button>
-               </div>
-            </div>
-          ) : (
-             <div className="flex items-center gap-4 p-2">
-                 <div className="w-12 h-12 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-1">
-                    <img src={logoUrl} alt="Preview" className="w-full h-full object-contain" />
-                 </div>
-                 <div className="flex-1 overflow-hidden">
-                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Logo Aplikasi</div>
-                    <div className="text-sm text-slate-800 truncate">{logoUrl}</div>
-                 </div>
-                 <button onClick={() => { setLogoInput(logoUrl); setIsEditingLogo(true); }} className="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 text-slate-600 font-medium">
-                    Ganti
-                 </button>
-             </div>
-          )}
-        </div>
-      </div>
-
-      {/* INTEGRATION SETTINGS SECTION */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mt-6 shadow-sm">
-        <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
-          <h3 className="font-bold text-slate-700 text-sm">Pengaturan Database</h3>
-          <button onClick={() => setShowGuide(true)} className="text-xs flex items-center gap-1 text-orange-600 font-medium hover:underline">
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-             Script & Panduan
-          </button>
-        </div>
-        
-        <div className="p-4">
-          {isEditingConfig ? (
-            <div className="space-y-3">
-               <div className="text-xs text-slate-600">
-                 Paste URL Web App dari Google Apps Script Deployment di bawah ini.
-               </div>
-               <input 
-                type="text" 
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="https://script.google.com/macros/s/..."
-                className="w-full text-sm p-2 border rounded focus:ring-2 focus:ring-orange-500 outline-none transition"
-               />
-               <div className="flex gap-2 justify-end">
-                 <button onClick={() => setIsEditingConfig(false)} className="text-slate-600 text-sm px-4 py-2 hover:bg-slate-100 rounded-lg">Batal</button>
-                 <button onClick={handleSaveConfig} className="bg-orange-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-orange-700 shadow">Simpan</button>
-               </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-               <div className="flex items-center gap-2 p-2 bg-slate-50 rounded border border-slate-100">
-                  <div className={`w-3 h-3 rounded-full shadow-sm ${configUrl ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
-                  <div className="text-sm font-medium text-slate-700 flex-1">
-                    {configUrl ? 'Terhubung ke Google Sheet' : 'Mode Demo (Lokal Storage)'}
-                    {FIXED_SCRIPT_URL && configUrl === FIXED_SCRIPT_URL && <span className="text-[10px] ml-2 bg-slate-100 px-2 py-0.5 rounded border text-slate-500">Hardcoded</span>}
-                  </div>
-                  <button onClick={() => { setUrlInput(configUrl); setIsEditingConfig(true); }} className="text-xs bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 text-slate-600">
-                    Ubah
-                  </button>
-               </div>
-               
-              <div className="flex flex-wrap gap-2">
-                {configUrl && (
-                  <>
-                    <button onClick={copyShareLink} className="flex-1 bg-blue-50 text-blue-700 font-medium text-xs hover:bg-blue-100 border border-blue-200 px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 transition">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                      Copy Link App
-                    </button>
-                    <button onClick={() => setShowQR(true)} className="flex-1 bg-slate-800 text-white font-medium text-xs hover:bg-slate-900 border border-slate-800 px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 shadow transition">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zM5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-                      QR Code
-                    </button>
-                    <button 
-                      onClick={handleSyncColors} 
-                      disabled={syncingColors}
-                      className="w-full bg-purple-50 text-purple-700 font-medium text-xs hover:bg-purple-100 border border-purple-200 px-3 py-2.5 rounded-lg flex items-center justify-center gap-2 transition"
-                    >
-                      {syncingColors ? 'Memproses...' : 'Warnai Ulang Data Lama'}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* DANGER ZONE: WIPE DATA */}
-      <div className="mt-8 border border-red-200 rounded-xl overflow-hidden bg-red-50/50">
-        <div className="bg-red-50 px-4 py-3 border-b border-red-100 flex items-center gap-2">
-           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-           <h3 className="font-bold text-red-800 text-sm">Danger Zone</h3>
-        </div>
-        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-           <div className="text-xs text-red-700/80">
-              <p className="font-bold text-red-800">Reset Database</p>
-              <p className="mt-1">Tindakan ini akan menghapus <strong>SEMUA DATA</strong> member secara permanen dari aplikasi dan {configUrl ? 'Google Sheet' : 'Local Storage'}. Tidak dapat dibatalkan.</p>
-           </div>
-           <button 
-             onClick={handleWipeData} 
-             disabled={wiping} 
-             className="whitespace-nowrap bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-           >
-             {wiping ? 'Menghapus...' : 'HAPUS SEMUA DATA'}
-           </button>
-        </div>
-      </div>
-
       {/* QR CODE MODAL */}
       {showQR && configUrl && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowQR(false)}>
@@ -1169,70 +1040,80 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
     // Sanitize input before sending
     const cleanNumber = sanitizePhoneNumber(phone);
     const cleanNick = nickname.toUpperCase(); // Force uppercase on submit
+
+    // --- LOGIKA BARU: Jika waktu habis, cek apakah nomor sudah ada di database ---
+    if (!timeLeft) {
+      try {
+        // Fetch all members to check existence before allowing login
+        const allMembers = await SheetService.getAllMembers();
+        
+        // Cek apakah nomor ada di daftar (tanpa mempedulikan format 08/62/8)
+        const isRegistered = allMembers.some(m => sanitizePhoneNumber(m.whatsapp) === cleanNumber);
+
+        if (!isRegistered) {
+           alert("MOHON MAAF\n\nPendaftaran baru sudah ditutup.\nNomor WhatsApp ini belum terdaftar di database kami.");
+           setLoading(false);
+           return; // STOP DISINI
+        }
+      } catch(err) {
+         alert("Gagal memverifikasi status member: " + err);
+         setLoading(false);
+         return;
+      }
+    }
+
     await onLogin(cleanNumber, cleanNick, childCount);
     setLoading(false);
   };
 
-  // IF EXPIRED: Show Locked View
-  if (!timeLeft) {
-    return (
-      <div className="animate-fade-in text-center py-12 space-y-6">
-        <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-red-100">
-           <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-           </svg>
-        </div>
-        <div className="space-y-2">
-           <h2 className="text-2xl font-bold text-slate-800">Pendaftaran Ditutup</h2>
-           <p className="text-slate-500 text-sm max-w-xs mx-auto">
-             Mohon maaf, batas waktu pendaftaran ulang telah berakhir pada tanggal 6 Januari 2026.
-           </p>
-        </div>
-        
-        {/* GAMBAR PENUTUPAN (Opsional) */}
-        {CLOSING_IMAGE_URL && (
-           <div className="w-full max-w-xs mx-auto my-4 rounded-xl overflow-hidden shadow-md border border-slate-200">
-              <img src={CLOSING_IMAGE_URL} alt="Closed" className="w-full h-auto object-cover" />
-           </div>
-        )}
-
-        <div className="p-4 bg-slate-100 rounded-lg text-xs text-slate-500">
-           Silakan hubungi admin jika ada pertanyaan lebih lanjut.
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="animate-fade-in space-y-8 py-4">
-      {/* COUNTDOWN BANNER */}
-      <div className="bg-slate-900 rounded-xl p-4 text-white shadow-lg shadow-slate-200">
-         <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-300">Pendaftaran Berakhir Dalam</p>
-         </div>
-         <div className="flex justify-center gap-3 text-center">
-            <div className="bg-slate-800 rounded-lg p-2 min-w-[60px]">
-               <div className="text-xl font-bold font-mono">{String(timeLeft.days).padStart(2, '0')}</div>
-               <div className="text-[9px] text-slate-400 uppercase">Hari</div>
-            </div>
-            <div className="text-xl font-bold pt-1">:</div>
-            <div className="bg-slate-800 rounded-lg p-2 min-w-[50px]">
-               <div className="text-xl font-bold font-mono">{String(timeLeft.hours).padStart(2, '0')}</div>
-               <div className="text-[9px] text-slate-400 uppercase">Jam</div>
-            </div>
-            <div className="text-xl font-bold pt-1">:</div>
-            <div className="bg-slate-800 rounded-lg p-2 min-w-[50px]">
-               <div className="text-xl font-bold font-mono">{String(timeLeft.minutes).padStart(2, '0')}</div>
-               <div className="text-[9px] text-slate-400 uppercase">Menit</div>
-            </div>
-            <div className="text-xl font-bold pt-1">:</div>
-            <div className="bg-slate-800 rounded-lg p-2 min-w-[50px] border border-slate-700">
-               <div className="text-xl font-bold font-mono text-red-400">{String(timeLeft.seconds).padStart(2, '0')}</div>
-               <div className="text-[9px] text-slate-400 uppercase">Detik</div>
-            </div>
-         </div>
-      </div>
+      {/* COUNTDOWN BANNER ATAU CLOSED BANNER */}
+      {timeLeft ? (
+        <div className="bg-slate-900 rounded-xl p-4 text-white shadow-lg shadow-slate-200">
+           <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-300">Pendaftaran Berakhir Dalam</p>
+           </div>
+           <div className="flex justify-center gap-3 text-center">
+              <div className="bg-slate-800 rounded-lg p-2 min-w-[60px]">
+                 <div className="text-xl font-bold font-mono">{String(timeLeft.days).padStart(2, '0')}</div>
+                 <div className="text-[9px] text-slate-400 uppercase">Hari</div>
+              </div>
+              <div className="text-xl font-bold pt-1">:</div>
+              <div className="bg-slate-800 rounded-lg p-2 min-w-[50px]">
+                 <div className="text-xl font-bold font-mono">{String(timeLeft.hours).padStart(2, '0')}</div>
+                 <div className="text-[9px] text-slate-400 uppercase">Jam</div>
+              </div>
+              <div className="text-xl font-bold pt-1">:</div>
+              <div className="bg-slate-800 rounded-lg p-2 min-w-[50px]">
+                 <div className="text-xl font-bold font-mono">{String(timeLeft.minutes).padStart(2, '0')}</div>
+                 <div className="text-[9px] text-slate-400 uppercase">Menit</div>
+              </div>
+              <div className="text-xl font-bold pt-1">:</div>
+              <div className="bg-slate-800 rounded-lg p-2 min-w-[50px] border border-slate-700">
+                 <div className="text-xl font-bold font-mono text-red-400">{String(timeLeft.seconds).padStart(2, '0')}</div>
+                 <div className="text-[9px] text-slate-400 uppercase">Detik</div>
+              </div>
+           </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+           {/* GAMBAR PENUTUPAN (Opsional) */}
+           {CLOSING_IMAGE_URL && (
+              <div className="w-full rounded-xl overflow-hidden shadow-md border border-slate-200">
+                 <img src={CLOSING_IMAGE_URL} alt="Closed" className="w-full h-auto object-cover" />
+              </div>
+           )}
+           <div className="bg-red-50 border border-red-100 p-4 rounded-xl text-center shadow-sm">
+              <h3 className="text-red-800 font-bold text-lg mb-1">PENDAFTARAN BARU DITUTUP</h3>
+              <p className="text-red-600 text-xs leading-relaxed">
+                 Batas waktu registrasi telah berakhir.<br/>
+                 Formulir di bawah ini <strong>HANYA</strong> dapat diakses oleh member yang sudah terdaftar sebelumnya namun belum melunasi atau melengkapi data.
+              </p>
+           </div>
+        </div>
+      )}
 
       <div className="text-center space-y-3">
         <img src={logoUrl} alt="Logo" className="w-24 h-24 object-contain mx-auto mb-4 drop-shadow-md" />

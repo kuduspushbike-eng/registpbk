@@ -34,7 +34,7 @@ const SIZE_CHART_URL = "https://i.ibb.co.com/6cDkDj4Y/size-charrt.jpg";
 // 'OPEN'        = Buka Normal (Hitung mundur sesuai DEADLINE)
 // 'LATE_ACCESS' = Tutup untuk member baru, TAPI member lama bisa login (Mode Susulan)
 // 'CLOSED'      = Tutup Total (Sampai Jumpa Musim Depan)
-const APP_STATUS = 'LATE_ACCESS' as 'OPEN' | 'LATE_ACCESS' | 'CLOSED';
+const APP_STATUS = 'CLOSED';
 
 // 8. BATAS WAKTU (Hanya berpengaruh jika APP_STATUS = 'OPEN')
 const DEADLINE = new Date('2026-01-06T21:00:00');

@@ -30,11 +30,16 @@ const DEFAULT_APP_LOGO = "https://i.ibb.co.com/1YLtbnnD/logo-new-2.png";
 // 6. URL GAMBAR SIZE CHART
 const SIZE_CHART_URL = "https://i.ibb.co.com/6cDkDj4Y/size-charrt.jpg";
 
-// 7. BATAS WAKTU PENDAFTARAN (Tahun-Bulan-Tanggal Jam:Menit:Detik)
+// 7. STATUS APLIKASI (UBAH DISINI)
+// 'OPEN'        = Buka Normal (Hitung mundur sesuai DEADLINE)
+// 'LATE_ACCESS' = Tutup untuk member baru, TAPI member lama bisa login (Mode Susulan)
+// 'CLOSED'      = Tutup Total (Sampai Jumpa Musim Depan)
+const APP_STATUS = 'LATE_ACCESS' as 'OPEN' | 'LATE_ACCESS' | 'CLOSED';
+
+// 8. BATAS WAKTU (Hanya berpengaruh jika APP_STATUS = 'OPEN')
 const DEADLINE = new Date('2026-01-06T21:00:00');
 
-// 8. URL GAMBAR SAAT PENUTUPAN (Opsional: Isi Link Gambar untuk ditampilkan saat tutup)
-// Ganti link di bawah dengan link poster/banner Anda. Kosongkan ("") jika tidak ingin pakai gambar.
+// 9. URL GAMBAR SAAT PENUTUPAN (Opsional: Isi Link Gambar untuk ditampilkan saat tutup)
 const CLOSING_IMAGE_URL = ""; 
 
 const MONTHS = [
@@ -1021,6 +1026,7 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
   }, []);
 
   useEffect(() => {
+    // Timer Logic: Only run if app is 'OPEN' and has deadline
     const timer = setInterval(() => {
       const tl = calculateTimeLeft();
       setTimeLeft(tl);
@@ -1041,13 +1047,24 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
     const cleanNumber = sanitizePhoneNumber(phone);
     const cleanNick = nickname.toUpperCase(); // Force uppercase on submit
 
-    // --- LOGIKA BARU: Jika waktu habis, cek apakah nomor sudah ada di database ---
-    if (!timeLeft) {
+    // --- LOGIKA BARU BERDASARKAN APP_STATUS ---
+    
+    // Jika Status CLOSED, blokir semua. (Seharusnya form tidak muncul, tapi untuk keamanan)
+    if (APP_STATUS === 'CLOSED') {
+        alert("Pendaftaran sudah ditutup total.");
+        setLoading(false);
+        return;
+    }
+
+    // Jika Status LATE_ACCESS (Susulan) ATAU jika OPEN tapi sudah lewat deadline
+    const isLateMode = APP_STATUS === 'LATE_ACCESS' || (APP_STATUS === 'OPEN' && !timeLeft);
+
+    if (isLateMode) {
       try {
         // Fetch all members to check existence before allowing login
         const allMembers = await SheetService.getAllMembers();
         
-        // Cek apakah nomor ada di daftar (tanpa mempedulikan format 08/62/8)
+        // Cek apakah nomor ada di daftar
         const isRegistered = allMembers.some(m => sanitizePhoneNumber(m.whatsapp) === cleanNumber);
 
         if (!isRegistered) {
@@ -1066,10 +1083,39 @@ const StepLogin = ({ onLogin, logoUrl }: { onLogin: (wa: string, nickname: strin
     setLoading(false);
   };
 
+  // TAMPILAN JIKA CLOSED TOTAL
+  if (APP_STATUS === 'CLOSED') {
+      return (
+        <div className="animate-fade-in text-center py-12 space-y-6">
+            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-slate-200">
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+               </svg>
+            </div>
+            <div className="space-y-2">
+               <h2 className="text-2xl font-bold text-slate-800">Pendaftaran Ditutup</h2>
+               <p className="text-slate-500 text-sm max-w-xs mx-auto">
+                 Sampai jumpa di musim latihan berikutnya!
+               </p>
+            </div>
+            
+            {CLOSING_IMAGE_URL && (
+               <div className="w-full max-w-xs mx-auto my-4 rounded-xl overflow-hidden shadow-md border border-slate-200">
+                  <img src={CLOSING_IMAGE_URL} alt="Closed" className="w-full h-auto object-cover" />
+               </div>
+            )}
+    
+            <div className="p-4 bg-slate-100 rounded-lg text-xs text-slate-500">
+               Silakan hubungi admin jika ada pertanyaan lebih lanjut.
+            </div>
+        </div>
+      );
+  }
+
   return (
     <div className="animate-fade-in space-y-8 py-4">
-      {/* COUNTDOWN BANNER ATAU CLOSED BANNER */}
-      {timeLeft ? (
+      {/* COUNTDOWN BANNER */}
+      {APP_STATUS === 'OPEN' && timeLeft ? (
         <div className="bg-slate-900 rounded-xl p-4 text-white shadow-lg shadow-slate-200">
            <div className="flex items-center justify-center gap-2 mb-3">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -1726,7 +1772,10 @@ const App = () => {
     if (!member) return;
     setLoading(true);
     try {
-      const updated = await SheetService.submitRegistration(member.whatsapp, data);
+      // IMPORTANT: Ensure childCount is synced to backend during form submission
+      // This handles cases where user upgraded via "Add Sibling" button
+      const payload = { ...data, childCount: member.childCount };
+      const updated = await SheetService.submitRegistration(member.whatsapp, payload);
       setMember(updated);
     } catch (e) {
       alert("Gagal menyimpan data: " + e);
@@ -1737,6 +1786,18 @@ const App = () => {
 
   const handleReset = () => {
       setMember(null);
+  };
+
+  const handleAddSibling = () => {
+    if (!member) return;
+    const confirmMsg = "Apakah Anda yakin ingin menambah susulan Rider ke-2?\n\nPastikan Anda sudah melakukan pembayaran tambahan kepada Admin.";
+    if (window.confirm(confirmMsg)) {
+        setMember({
+            ...member,
+            childCount: 2, // Upgrade local state to 2 children
+            status: UserStatus.APPROVED // Unlock form for editing
+        });
+    }
   };
 
   return (
@@ -1800,6 +1861,30 @@ const App = () => {
                               </div>
                             )}
                         </div>
+
+                        {/* SUSULAN ANAK KE-2 */}
+                        {member.childCount === 1 && (
+                            <div className="mt-4 px-4">
+                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-800 space-y-2 text-left">
+                                    <p className="font-bold flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                        </svg>
+                                        Susulan Rider Ke-2?
+                                    </p>
+                                    <p className="text-xs text-orange-700/80">
+                                        Jika Anda ingin mendaftarkan anak kedua (susulan), klik tombol di bawah.
+                                        Pastikan sudah konfirmasi pembayaran tambahan ke Admin.
+                                    </p>
+                                    <button
+                                        onClick={handleAddSibling}
+                                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-sm"
+                                    >
+                                        Tambah Rider Ke-2
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         
                         {WA_GROUP_LINK && (
                           <div className="pt-4 px-2">

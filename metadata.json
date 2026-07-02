@@ -1,5 +1,6 @@
 {
   "name": "Registrasi ulang member",
   "description": "Re-registration portal for Pushbike Kudus members with payment verification and Gemini AI assistance.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }

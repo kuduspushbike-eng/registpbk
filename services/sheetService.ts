@@ -226,3 +226,21 @@ export const syncColors = async (): Promise<{success: boolean, count: number}> =
   await delay(500);
   return { success: true, count: 0 };
 };
+
+export const submitRaceKolektif = async (data: any): Promise<void> => {
+  if (getActiveUrl()) {
+    await callScript('submit_race_kolektif', data);
+    return;
+  }
+  await delay(1000);
+  console.log("Mock submit kolektif", data);
+};
+
+export const getRaceKolektif = async (): Promise<any[]> => {
+  if (getActiveUrl()) {
+    const res = await callScript('get_race_kolektif');
+    return res.data || [];
+  }
+  await delay(500);
+  return [];
+};

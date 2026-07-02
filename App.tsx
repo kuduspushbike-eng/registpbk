@@ -43,7 +43,7 @@ const SIZE_CHART_URL = "https://i.ibb.co.com/6cDkDj4Y/size-charrt.jpg";
 // 'OPEN'        = Buka Normal (Hitung mundur sesuai DEADLINE)
 // 'LATE_ACCESS' = Tutup untuk member baru, TAPI member lama bisa login (Mode Susulan)
 // 'CLOSED'      = Tutup Total (Sampai Jumpa Musim Depan)
-const APP_STATUS = "OPEN";
+const APP_STATUS = "CLOSED";
 
 // 8. BATAS WAKTU (Hanya berpengaruh jika APP_STATUS = 'OPEN')
 const DEADLINE = new Date("2026-07-31T21:00:00");
@@ -1616,12 +1616,10 @@ const StepLogin = ({
         </div>
         <div className="space-y-2">
           <h2 className="text-2xl font-bold text-slate-800">
-            Pendaftaran Ditutup
+            Pendaftaran Sementara Ditutup
           </h2>
           <p className="text-slate-500 text-sm max-w-xs mx-auto">
-            Ada kemungkinan pendaftaran dibuka bulan Juli 2026.
-            <br />
-            Sampai jumpa di musim latihan berikutnya!
+            Mohon maaf, pendaftaran member saat ini ditutup sementara waktu.
           </p>
         </div>
 

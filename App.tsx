@@ -1753,14 +1753,14 @@ const StepLogin = ({
           onClick={() => setChildCount(1)}
           className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all ${childCount === 1 ? "bg-orange-500 text-white shadow" : "text-slate-500 hover:bg-slate-50"}`}
         >
-          1 RIDER (Rp 200rb)
+          1 RIDER (Rp 100rb)
         </button>
         <button
           type="button"
           onClick={() => setChildCount(2)}
           className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all ${childCount === 2 ? "bg-purple-600 text-white shadow" : "text-slate-500 hover:bg-slate-50"}`}
         >
-          2 RIDER (Rp 300rb)
+          2 RIDER (Rp 200rb)
         </button>
       </div>
 

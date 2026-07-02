@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { APP_STATUS, DEADLINE, CLOSING_IMAGE_URL } from "../config";
 import { calculateTimeLeft } from "../utils";
+import * as SheetService from "../services/sheetService";
 
 const StepLogin = ({
   onLogin,

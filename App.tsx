@@ -43,10 +43,10 @@ const SIZE_CHART_URL = "https://i.ibb.co.com/6cDkDj4Y/size-charrt.jpg";
 // 'OPEN'        = Buka Normal (Hitung mundur sesuai DEADLINE)
 // 'LATE_ACCESS' = Tutup untuk member baru, TAPI member lama bisa login (Mode Susulan)
 // 'CLOSED'      = Tutup Total (Sampai Jumpa Musim Depan)
-const APP_STATUS = "CLOSED";
+const APP_STATUS = "OPEN";
 
 // 8. BATAS WAKTU (Hanya berpengaruh jika APP_STATUS = 'OPEN')
-const DEADLINE = new Date("2026-07-31T21:00:00");
+const DEADLINE = new Date("2026-08-15T21:00:00");
 
 // 9. URL GAMBAR SAAT PENUTUPAN (Opsional: Isi Link Gambar untuk ditampilkan saat tutup)
 const CLOSING_IMAGE_URL = "";
@@ -899,6 +899,7 @@ const IntegrationGuideModal = ({
 
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import * as XLSX from "xlsx";
 
 const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
   const [members, setMembers] = useState<MemberData[]>([]);
@@ -1019,34 +1020,23 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
       }
 
       const zip = new JSZip();
-      const csvRows = [
-        [
-          "Waktu",
-          "Kategori",
-          "Nama Rider",
-          "Nama Tim",
-          "Komunitas",
-          "Ukuran Baju",
-          "Nomor Start",
-          "Tanggal Lahir",
-        ],
-      ];
+      
+      const sheetData = data.map((row: any) => ({
+        "Waktu": row.timestamp,
+        "Kategori": row.category,
+        "Nama Rider": row.riderName,
+        "Nama Tim": row.teamName,
+        "Komunitas": row.community,
+        "Ukuran Baju": row.shirtSize,
+        "Nomor Start": row.startNumber,
+        "Tanggal Lahir": row.bornDate,
+      }));
 
-      data.forEach((row: any, i: number) => {
-        csvRows.push([
-          row.timestamp,
-          row.category,
-          row.riderName,
-          row.teamName,
-          row.community,
-          row.shirtSize,
-          row.startNumber,
-          row.bornDate,
-        ]);
-
+      data.forEach((row: any) => {
         const sanitize = (name: string) =>
-          name.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-        const baseName = `${i + 1}_${sanitize(row.category)}_${sanitize(row.riderName)}`;
+          name ? String(name).replace(/[^a-z0-9]/gi, "_").toLowerCase() : "";
+        
+        const baseName = `${sanitize(row.riderName)}_${sanitize(row.category)}`;
 
         if (row.kkAktaFile) {
           const base64Data = row.kkAktaFile.split(",")[1];
@@ -1073,8 +1063,12 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
         }
       });
 
-      const csvContent = csvRows.map((e) => e.join(",")).join("\n");
-      zip.file("Data_Race_Kolektif.csv", csvContent);
+      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Pendaftaran Kolektif");
+      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      
+      zip.file("Data_Race_Kolektif.xlsx", excelBuffer);
 
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, "Data_Kolektif_Race.zip");

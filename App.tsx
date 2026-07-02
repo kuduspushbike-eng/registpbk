@@ -18,7 +18,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 // 1. WAJIB ISI URL GOOGLE SCRIPT DISINI AGAR JALAN DI HP ORANG LAIN / INCOGNITO
 // Caranya: Deploy Google Script > Copy Web App URL > Paste di bawah ini
 const FIXED_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbwP3jK4u3RFB7jG4fWa6J84NAEd6dDHyOXyb44JcaxgFMVIVQFo8y1gOONNcrqBudCNRg/exec";
+  "https://script.google.com/macros/s/AKfycbz3gWrsD-oh_CuxsdEW7DsKQ2IJbSJ_sjbgcBFuWJhesSQeffL_1p_RFfLqaWESMFpt-g/exec";
 
 // 2. UBAH DATA REKENING BANK DISINI
 const BANK_INFO = {
@@ -270,7 +270,7 @@ function handleCheckStatus(sheet, colMap, params) {
   
   if (rowIndex == -1) {
     var randomCode = Math.floor(Math.random() * 90 + 10);
-    var basePrice = childCount == 2 ? 300000 : 200000;
+    var basePrice = childCount == 2 ? 200000 : 100000;
     var amount = basePrice + randomCode;
     var waString = "'" + wa; 
     
@@ -294,7 +294,7 @@ function handleCheckStatus(sheet, colMap, params) {
     if (m.status === 'NEW') {
        var currentCount = Number(m.childCount) || 1;
        if (currentCount !== childCount) {
-          var basePrice = childCount == 2 ? 300000 : 200000;
+          var basePrice = childCount == 2 ? 200000 : 100000;
           var code = m.paymentCode || Math.floor(Math.random() * 90 + 10); 
           var newAmount = basePrice + code;
           
@@ -325,7 +325,7 @@ function handleConfirmPayment(sheet, colMap, params) {
   
   if (params.method === "CASH") {
      var currentChildCount = sheet.getRange(rowIndex, colMap['childCount']).getValue() || 1;
-     var basePrice = currentChildCount == 2 ? 300000 : 200000;
+     var basePrice = currentChildCount == 2 ? 200000 : 100000;
      sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(basePrice);
   }
   
@@ -1907,7 +1907,7 @@ const StepPayment = ({
             Silakan serahkan uang tunai sebesar{" "}
             <strong>
               Rp{" "}
-              {(member.childCount === 2 ? 300000 : 200000).toLocaleString(
+              {(member.childCount === 2 ? 200000 : 100000).toLocaleString(
                 "id-ID",
               )}
             </strong>{" "}

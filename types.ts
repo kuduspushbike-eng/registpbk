@@ -19,7 +19,7 @@ export type PaymentMethod = "TRANSFER" | "CASH";
 export interface MemberData {
   whatsapp: string;
   status: UserStatus;
-  paymentAmount: number; // 200000/300000 + random digits
+  paymentAmount: number; // 100000/200000 + random digits
   paymentCode: number; // The random digits
   paymentMethod?: PaymentMethod;
   childCount: number; // 1 or 2

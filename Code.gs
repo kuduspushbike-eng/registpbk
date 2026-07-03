@@ -1,6 +1,6 @@
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v14 (Opsi Klaim Member Lama)
+// Versi: v15 (Opsi Klaim Member Lama Otomatis Setuju)
 
 var FIELD_MAPPING = [
   { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
@@ -267,11 +267,11 @@ function handleCheckStatus(sheet, colMap, params) {
       sheet.getRange(newRowIdx, colMap['paymentMethod']).setValue("MEMBER_LAMA");
       updateRowColor(sheet, newRowIdx, "APPROVED");
     } else if (isOldMemberClaimed) {
-      sheet.getRange(newRowIdx, colMap['status']).setValue("WAITING_APPROVAL");
+      sheet.getRange(newRowIdx, colMap['status']).setValue("APPROVED");
       sheet.getRange(newRowIdx, colMap['paymentAmount']).setValue(0);
       sheet.getRange(newRowIdx, colMap['paymentCode']).setValue(0);
       sheet.getRange(newRowIdx, colMap['paymentMethod']).setValue("KLAIM_MEMBER_LAMA");
-      updateRowColor(sheet, newRowIdx, "WAITING_APPROVAL");
+      updateRowColor(sheet, newRowIdx, "APPROVED");
     } else {
       var randomCode = Math.floor(Math.random() * 90 + 10);
       var basePrice = childCount == 2 ? 200000 : 100000;
@@ -287,6 +287,53 @@ function handleCheckStatus(sheet, colMap, params) {
 
   var member = getMemberAtRow(sheet, colMap, rowIndex);
   if (member.status === "NEW") {
+     // Check if they are actually an old member in the previous sheet
+     var isOldMember = false;
+     var ss = SpreadsheetApp.getActiveSpreadsheet();
+     var oldSheet = ss.getSheetByName("MemberData");
+     if (!oldSheet) {
+       var sheets = ss.getSheets();
+       for (var i = 0; i < sheets.length; i++) {
+         var name = sheets[i].getName();
+         if (name !== sheet.getName() && name !== "RaceKolektif") {
+           if (sheets[i].getLastRow() > 1) {
+             oldSheet = sheets[i];
+             break;
+           }
+         }
+       }
+     }
+     if (oldSheet && oldSheet.getName() !== sheet.getName()) {
+       var data = oldSheet.getDataRange().getValues();
+       var oldHeaders = data[0] || [];
+       var waColIdx = -1;
+       for(var i=0; i<oldHeaders.length; i++) {
+         var h = String(oldHeaders[i]).toLowerCase();
+         if(h.indexOf("whatsapp") > -1 || h.indexOf("wa") > -1 || h.indexOf("phone") > -1) {
+           waColIdx = i; break;
+         }
+       }
+       if(waColIdx === -1) waColIdx = colMap['whatsapp'] - 1; // fallback
+       
+       var normalizedWa = normalizePhone(wa);
+       for (var i = 1; i < data.length; i++) {
+         var rowWa = normalizePhone(data[i][waColIdx]);
+         if (rowWa === normalizedWa) {
+           isOldMember = true;
+           break;
+         }
+       }
+     }
+
+     if (isOldMember) {
+       sheet.getRange(rowIndex, colMap['status']).setValue("APPROVED");
+       sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(0);
+       sheet.getRange(rowIndex, colMap['paymentCode']).setValue(0);
+       sheet.getRange(rowIndex, colMap['paymentMethod']).setValue("MEMBER_LAMA");
+       updateRowColor(sheet, rowIndex, "APPROVED");
+       return getMemberAtRow(sheet, colMap, rowIndex);
+     }
+
      var currentChildCount = Number(member.childCount) || 1;
      var needsUpdate = false;
      var newBasePrice = childCount == 2 ? 200000 : 100000;
@@ -304,11 +351,11 @@ function handleCheckStatus(sheet, colMap, params) {
      }
      
      if (isOldMemberClaimed) {
-       sheet.getRange(rowIndex, colMap['status']).setValue("WAITING_APPROVAL");
+       sheet.getRange(rowIndex, colMap['status']).setValue("APPROVED");
        sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(0);
        sheet.getRange(rowIndex, colMap['paymentCode']).setValue(0);
        sheet.getRange(rowIndex, colMap['paymentMethod']).setValue("KLAIM_MEMBER_LAMA");
-       updateRowColor(sheet, rowIndex, "WAITING_APPROVAL");
+       updateRowColor(sheet, rowIndex, "APPROVED");
        needsUpdate = true;
      }
      

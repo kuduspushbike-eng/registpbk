@@ -113,18 +113,32 @@ export const checkMemberStatus = async (whatsapp: string, nickname?: string, chi
   
   if (db[whatsapp]) {
     const existing = db[whatsapp];
-    // LOGIC FIX: If member exists but is NEW, allow updating child count and price
-    if (existing.status === UserStatus.NEW && existing.childCount !== childCount) {
-       const basePrice = childCount === 2 ? 300000 : 200000;
-       const randomDigits = existing.paymentCode || Math.floor(Math.random() * 90 + 10);
+    // LOGIC FIX: If member exists but is NEW, allow updating child count, price, or transitioning to old member claim
+    if (existing.status === UserStatus.NEW) {
+       let needsSave = false;
+       if (isOldMemberClaimed) {
+          existing.status = UserStatus.APPROVED;
+          existing.paymentAmount = 0;
+          existing.paymentCode = 0;
+          existing.paymentMethod = "KLAIM_MEMBER_LAMA";
+          needsSave = true;
+       } else if (existing.childCount !== childCount) {
+          const basePrice = childCount === 2 ? 300000 : 200000;
+          const randomDigits = existing.paymentCode || Math.floor(Math.random() * 90 + 10);
+          
+          existing.childCount = childCount;
+          existing.paymentAmount = basePrice + randomDigits;
+          needsSave = true;
+       }
        
-       existing.childCount = childCount;
-       existing.paymentAmount = basePrice + randomDigits;
-       // Also update nickname if provided
-       if(nickname) existing.nickname = nickname;
+       if (nickname && existing.nickname !== nickname) {
+          existing.nickname = nickname;
+          needsSave = true;
+       }
        
-       saveDB(db);
-       return existing;
+       if (needsSave) {
+          saveDB(db);
+       }
     }
     return existing;
   }
@@ -136,7 +150,7 @@ export const checkMemberStatus = async (whatsapp: string, nickname?: string, chi
     whatsapp,
     nickname: nickname || '',
     childCount: childCount,
-    status: isOldMemberClaimed ? UserStatus.WAITING_APPROVAL : UserStatus.NEW,
+    status: isOldMemberClaimed ? UserStatus.APPROVED : UserStatus.NEW,
     paymentCode: isOldMemberClaimed ? 0 : randomDigits,
     paymentAmount: isOldMemberClaimed ? 0 : (basePrice + randomDigits),
     paymentMethod: isOldMemberClaimed ? "KLAIM_MEMBER_LAMA" : undefined

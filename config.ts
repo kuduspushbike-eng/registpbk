@@ -1,4 +1,4 @@
-export const FIXED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxCAYZV7ZGCZTpHeytfQR2ql25PyoLSRJ_oHVYFJrlInDc5VlgDJppfHDvlgmPn0erAdg/exec";
+export const FIXED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMZi8pg9N57pZI07QotxBjXq1JMGm9kDNGEnXwkKnV85JuB5WVgh-aZx3DHuVPkQT44g/exec";
 
 export const BANK_INFO = {
   bankName: "Bank BNI",

@@ -54,12 +54,23 @@ const callScript = async (action: string, payload: any = {}) => {
   const url = getActiveUrl();
   if (!url) throw new Error("Script URL not configured");
   
-  const response = await fetch(url, {
-    method: "POST",
-    body: JSON.stringify({ action, ...payload })
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify({ action, ...payload })
+    });
+  } catch(err) {
+    throw new Error("Gagal melakukan request. Periksa koneksi internet Anda.");
+  }
   
-  const json = await response.json();
+  let json;
+  try {
+    json = await response.json();
+  } catch(err) {
+    throw new Error("Gagal memproses respon dari Google Script. Pastikan URL Script benar dan di-deploy dengan akses 'Anyone'.");
+  }
+  
   if (json.error) throw new Error(json.error);
   return json;
 };

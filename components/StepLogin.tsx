@@ -90,9 +90,13 @@ const StepLogin = ({
         return;
       }
     }
-
-    await onLogin(cleanNumber, cleanNick, childCount);
-    setLoading(false);
+    try {
+      await onLogin(cleanNumber, cleanNick, childCount);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // TAMPILAN JIKA CLOSED TOTAL

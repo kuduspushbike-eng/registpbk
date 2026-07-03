@@ -30,6 +30,36 @@ import StepForm from "./components/StepForm";
 import HomeLanding from "./components/HomeLanding";
 import GOOGLE_SCRIPT_CODE from "./Code.gs?raw";
 
+const AlertModal = () => {
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const handleAlert = (e: any) => {
+      setMessage(e.detail);
+    };
+    window.alert = (msg) => {
+      const evt = new CustomEvent('global-alert', { detail: String(msg) });
+      window.dispatchEvent(evt);
+    };
+    window.addEventListener('global-alert', handleAlert);
+    return () => window.removeEventListener('global-alert', handleAlert);
+  }, []);
+
+  if (!message) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
+        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        <p className="text-slate-800 text-sm mb-6 whitespace-pre-wrap">{message}</p>
+        <button onClick={() => setMessage("")} className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition">OK Mengerti</button>
+      </div>
+    </div>
+  );
+};
+
 const Header = ({
   onViewChange,
   currentView,
@@ -810,6 +840,7 @@ const App = () => {
         onClose={() => setShowAdminLogin(false)}
         onSuccess={handleAdminSuccess}
       />
+      <AlertModal />
       <SpeedInsights />
     </div>
   );

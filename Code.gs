@@ -1,6 +1,6 @@
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v12 (Auto-bypass payment for Old Members)
+// Versi: v13 (Fix member lama check bug)
 
 var FIELD_MAPPING = [
   { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
@@ -52,6 +52,7 @@ function doPost(e) {
     var params = JSON.parse(e.postData.contents);
     var action = params.action;
     var result = {};
+    
     
     if (action == "get_all") {
       result = getAllMembers(sheet, colMap);
@@ -201,14 +202,28 @@ function handleCheckStatus(sheet, colMap, params) {
   var rowIndex = findRowIndex(sheet, colMap, wa);
   
   if (rowIndex == -1) {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
     var oldSheet = ss.getSheetByName("MemberData");
     if (!oldSheet) {
       var sheets = ss.getSheets();
       for (var i = 0; i < sheets.length; i++) {
-        if (sheets[i].getName() !== sheet.getName()) {
-          oldSheet = sheets[i];
-          break;
+        var name = sheets[i].getName();
+        if (name !== sheet.getName() && name !== "RaceKolektif") {
+          // Verify it has some data
+          if (sheets[i].getLastRow() > 1) {
+            oldSheet = sheets[i];
+            break;
+          }
+        }
+      }
+      // fallback
+      if (!oldSheet) {
+        for (var i = 0; i < sheets.length; i++) {
+          var name = sheets[i].getName();
+          if (name !== sheet.getName() && name !== "RaceKolektif") {
+            oldSheet = sheets[i];
+            break;
+          }
         }
       }
     }

@@ -58,6 +58,9 @@ const callScript = async (action: string, payload: any = {}) => {
   try {
     response = await fetch(url, {
       method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
       body: JSON.stringify({ action, ...payload })
     });
   } catch(err) {

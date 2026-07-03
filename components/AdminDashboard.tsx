@@ -49,8 +49,16 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<string[]>([]);
   const [hasTested, setHasTested] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  const loadData = async (showLoading = true) => {
+  const loadData = async (showLoading = true, isManual = false) => {
+    if (!SheetService.getScriptUrl()) {
+      setMembers([]);
+      setLoading(false);
+      setConnectionError("Belum ada URL Google Sheet yang tersimpan. Silakan konfigurasi di tab 'Sistem'.");
+      return;
+    }
+
     if (showLoading) setLoading(true);
     try {
       const data = await SheetService.getAllMembers();
@@ -64,11 +72,14 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
         return score(a.status) - score(b.status);
       });
       setMembers(sorted);
-    } catch (e) {
+      setConnectionError(null);
+    } catch (e: any) {
       console.error("Failed to load data", e);
-      alert(
-        "Gagal memuat data. Periksa koneksi internet atau konfigurasi URL Google Sheet."
-      );
+      const errMsg = e?.message || "Gagal memuat data dari Google Sheets. Periksa koneksi internet atau konfigurasi URL Google Sheet.";
+      setConnectionError(errMsg);
+      if (isManual) {
+        alert(errMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,8 +87,8 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
 
   useEffect(() => {
     loadData();
-    // Auto refresh admin dashboard every 15 seconds
-    const interval = setInterval(() => loadData(false), 15000);
+    // Auto refresh admin dashboard every 15 seconds silently
+    const interval = setInterval(() => loadData(false, false), 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -129,7 +140,7 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
         try {
           await SheetService.wipeAllData();
           alert("✅ Database berhasil di-reset bersih.");
-          loadData(true);
+          loadData(true, true);
         } catch (error) {
           console.error(error);
           alert("Gagal menghapus data.");
@@ -237,7 +248,7 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
     SheetService.setScriptUrl(urlInput);
     setConfigUrl(urlInput);
     setIsEditingConfig(false);
-    loadData(true);
+    loadData(true, true);
   };
 
   const handleSaveLogo = () => {
@@ -513,13 +524,31 @@ const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
         </div>
       </div>
 
+      {/* CONNECTION ERROR BANNER */}
+      {connectionError && (
+        <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-xs text-red-800 space-y-1.5 animate-fade-in shadow-sm">
+          <div className="flex items-center gap-2 font-bold text-red-700">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Masalah Koneksi Google Sheets</span>
+          </div>
+          <p className="leading-relaxed text-red-700 pl-6 font-medium">
+            {connectionError}
+          </p>
+          <p className="text-[10px] text-red-500 pl-6 pt-0.5">
+            Sistem menggunakan database cadangan lokal sementara. Periksa koneksi internet Anda atau pastikan URL Script Web App di tab <button onClick={() => setActiveTab("sistem")} className="underline font-bold text-red-600 hover:text-red-700">Sistem</button> sudah benar dan di-deploy dengan akses "Anyone".
+          </p>
+        </div>
+      )}
+
       {/* TAB 1: MEMBERS APPROVAL LIST */}
       {activeTab === "members" && (
         <div className="space-y-4">
           <div className="flex justify-between items-center px-1">
             <span className="text-xs font-semibold text-slate-400">Daftar Pendaftar Baru & Re-Registrasi</span>
             <button
-              onClick={() => loadData(true)}
+              onClick={() => loadData(true, true)}
               className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-2.5 py-1 rounded-full transition font-bold flex items-center gap-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

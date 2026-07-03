@@ -454,8 +454,8 @@ const App = () => {
         isOldMemberClaimed,
       );
       setMember(data);
-    } catch (e) {
-      alert("Gagal memuat data. " + e);
+    } catch (e: any) {
+      alert("Gagal memuat data: " + (e?.message || e || "Terjadi kesalahan koneksi."));
     } finally {
       setLoading(false);
     }
@@ -467,8 +467,8 @@ const App = () => {
     try {
       const data = await SheetService.confirmPayment(member.whatsapp, method);
       setMember(data);
-    } catch (e) {
-      alert("Gagal konfirmasi: " + e);
+    } catch (e: any) {
+      alert("Gagal konfirmasi: " + (e?.message || e || "Terjadi kesalahan."));
     } finally {
       setLoading(false);
     }
@@ -502,8 +502,8 @@ const App = () => {
         payload,
       );
       setMember(updated);
-    } catch (e) {
-      alert("Gagal menyimpan data: " + e);
+    } catch (e: any) {
+      alert("Gagal menyimpan data: " + (e?.message || e || "Terjadi kesalahan."));
     } finally {
       setLoading(false);
     }
@@ -515,8 +515,8 @@ const App = () => {
       await SheetService.submitRaceKolektif(data);
       alert("Pendaftaran Kolektif Race berhasil!");
       setView("user");
-    } catch (e) {
-      alert("Gagal menyimpan data: " + e);
+    } catch (e: any) {
+      alert("Gagal menyimpan data: " + (e?.message || e || "Terjadi kesalahan."));
     } finally {
       setLoading(false);
     }

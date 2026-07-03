@@ -51,7 +51,12 @@ const StepLogin = ({
 
     setLoading(true);
     // Sanitize input before sending
-    const cleanNumber = sanitizePhoneNumber(phone);
+    let cleanNumber = phone.replace(/\D/g, "");
+    if (cleanNumber.startsWith("62")) {
+      cleanNumber = "0" + cleanNumber.substring(2);
+    } else if (!cleanNumber.startsWith("0")) {
+      cleanNumber = "0" + cleanNumber;
+    }
     const cleanNick = nickname.toUpperCase(); // Force uppercase on submit
 
     // --- LOGIKA BARU BERDASARKAN APP_STATUS ---

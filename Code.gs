@@ -1,6 +1,6 @@
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v10 (Sync Colors Added)
+// Versi: v11 (New Sheet Registrasi_2026 Added)
 
 var FIELD_MAPPING = [
   { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
@@ -40,7 +40,13 @@ function doPost(e) {
   
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("MemberData") || ss.getSheets()[0];
+    var sheetName = "Registrasi_2026";
+    var sheet = ss.getSheetByName(sheetName);
+    
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+    }
+    
     var colMap = setupColumns(sheet);
     
     var params = JSON.parse(e.postData.contents);
@@ -378,7 +384,7 @@ function rowToMember(rowArray, colMap) {
 function normalizePhone(phone) {
   if (!phone) return "";
   var p = String(phone).replace(/\D/g, ''); 
-  if (p.startsWith('62')) p = p.substring(2);
-  if (p.startsWith('0')) p = p.substring(1);
+  if (p.startsWith('62')) p = '0' + p.substring(2);
+  else if (!p.startsWith('0') && p.length > 0) p = '0' + p;
   return p;
 }

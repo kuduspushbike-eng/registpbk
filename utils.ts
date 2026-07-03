@@ -4,7 +4,7 @@ export const sanitizePhoneNumber = (phone: string): string => {
   let clean = phone.replace(/\D/g, "");
   if (clean.startsWith("62")) {
     clean = "0" + clean.substring(2);
-  } else if (clean.startsWith("8")) {
+  } else if (!clean.startsWith("0")) {
     clean = "0" + clean;
   }
   return clean;

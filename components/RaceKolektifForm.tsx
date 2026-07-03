@@ -12,7 +12,9 @@ export default function RaceKolektifForm({
   isLoading,
   onCancel,
 }: Props) {
-  const [formData, setFormData] = useState<Partial<RaceKolektifData>>({});
+  const [formData, setFormData] = useState<Partial<RaceKolektifData>>({
+    community: "PUSHBIKE KUDUS",
+  });
   const [error, setError] = useState<string>("");
 
   const handleFileChange = (
@@ -145,11 +147,11 @@ export default function RaceKolektifForm({
             <input
               type="text"
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 uppercase"
               placeholder="Nama lengkap rider"
               value={formData.riderName || ""}
               onChange={(e) =>
-                setFormData({ ...formData, riderName: e.target.value })
+                setFormData({ ...formData, riderName: e.target.value.toUpperCase() })
               }
             />
           </div>
@@ -161,11 +163,11 @@ export default function RaceKolektifForm({
             <input
               type="text"
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 uppercase"
               placeholder="Nama Tim"
               value={formData.teamName || ""}
               onChange={(e) =>
-                setFormData({ ...formData, teamName: e.target.value })
+                setFormData({ ...formData, teamName: e.target.value.toUpperCase() })
               }
             />
           </div>
@@ -177,11 +179,11 @@ export default function RaceKolektifForm({
             <input
               type="text"
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 uppercase"
               placeholder="Asal komunitas"
               value={formData.community || ""}
               onChange={(e) =>
-                setFormData({ ...formData, community: e.target.value })
+                setFormData({ ...formData, community: e.target.value.toUpperCase() })
               }
             />
           </div>
@@ -193,11 +195,11 @@ export default function RaceKolektifForm({
             <input
               type="text"
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-slate-50 uppercase"
               placeholder="Contoh: 99"
               value={formData.startNumber || ""}
               onChange={(e) =>
-                setFormData({ ...formData, startNumber: e.target.value })
+                setFormData({ ...formData, startNumber: e.target.value.toUpperCase() })
               }
             />
           </div>

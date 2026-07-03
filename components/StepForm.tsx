@@ -32,6 +32,10 @@ const StepForm = ({
     addressDomicile: initialData.addressDomicile || "",
   });
 
+  const isOldMember =
+    initialData.paymentMethod === "MEMBER_LAMA" ||
+    initialData.paymentMethod === "KLAIM_MEMBER_LAMA";
+
   const [sameAddress, setSameAddress] = useState(false);
   const [showSizeChart, setShowSizeChart] = useState(false);
 
@@ -135,6 +139,15 @@ const StepForm = ({
         cleanData[key] = val.toUpperCase();
       }
     });
+
+    if (isOldMember) {
+      // @ts-ignore
+      cleanData.shirtSize = "-";
+      if (initialData.childCount === 2) {
+        // @ts-ignore
+        cleanData.shirtSize2 = "-";
+      }
+    }
 
     // --- FIX: REMOVE CHILD 2 DEFAULTS IF 1 RIDER ---
     // Jika user hanya memilih 1 rider, kita hapus data default anak ke-2
@@ -250,31 +263,33 @@ const StepForm = ({
                 onChange={(e) => handleChange("birthDate", e.target.value)}
               />
             </div>
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-semibold text-slate-600">
-                  Ukuran Baju
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowSizeChart(true)}
-                  className="text-[10px] text-blue-600 font-bold hover:underline"
-                >
-                  Lihat Size Chart
-                </button>
-              </div>
-              <div className="grid grid-cols-6 gap-1">
-                {Object.values(ShirtSize).map((size) => (
-                  <div
-                    key={size}
-                    onClick={() => handleChange("shirtSize", size)}
-                    className={`cursor-pointer text-center py-2 text-xs font-bold rounded border transition-colors ${formData.shirtSize === size ? "bg-orange-500 text-white border-orange-600" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+            {!isOldMember && (
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-semibold text-slate-600">
+                    Ukuran Baju
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowSizeChart(true)}
+                    className="text-[10px] text-blue-600 font-bold hover:underline"
                   >
-                    {size}
-                  </div>
-                ))}
+                    Lihat Size Chart
+                  </button>
+                </div>
+                <div className="grid grid-cols-6 gap-1">
+                  {Object.values(ShirtSize).map((size) => (
+                    <div
+                      key={size}
+                      onClick={() => handleChange("shirtSize", size)}
+                      className={`cursor-pointer text-center py-2 text-xs font-bold rounded border transition-colors ${formData.shirtSize === size ? "bg-orange-500 text-white border-orange-600" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                    >
+                      {size}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* CHILD 2 SECTION (CONDITIONAL) */}
@@ -366,22 +381,24 @@ const StepForm = ({
                   onChange={(e) => handleChange("birthDate2", e.target.value)}
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Ukuran Baju
-                </label>
-                <div className="grid grid-cols-6 gap-1">
-                  {Object.values(ShirtSize).map((size) => (
-                    <div
-                      key={size}
-                      onClick={() => handleChange("shirtSize2", size)}
-                      className={`cursor-pointer text-center py-2 text-xs font-bold rounded border transition-colors ${formData.shirtSize2 === size ? "bg-purple-600 text-white border-purple-700" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
-                    >
-                      {size}
-                    </div>
-                  ))}
+              {!isOldMember && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Ukuran Baju
+                  </label>
+                  <div className="grid grid-cols-6 gap-1">
+                    {Object.values(ShirtSize).map((size) => (
+                      <div
+                        key={size}
+                        onClick={() => handleChange("shirtSize2", size)}
+                        className={`cursor-pointer text-center py-2 text-xs font-bold rounded border transition-colors ${formData.shirtSize2 === size ? "bg-purple-600 text-white border-purple-700" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        {size}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

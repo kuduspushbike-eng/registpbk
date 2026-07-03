@@ -443,6 +443,7 @@ const App = () => {
     wa: string,
     nickname: string,
     childCount: number,
+    isOldMemberClaimed?: boolean,
   ) => {
     setLoading(true);
     try {
@@ -450,6 +451,7 @@ const App = () => {
         wa,
         nickname,
         childCount,
+        isOldMemberClaimed,
       );
       setMember(data);
     } catch (e) {
@@ -569,7 +571,7 @@ const App = () => {
             ) : member.status === UserStatus.NEW ? (
               <StepPayment member={member} onConfirm={handlePaymentConfirm} />
             ) : member.status === UserStatus.WAITING_APPROVAL ? (
-              <StepWaitingApproval onCheckStatus={handleCheckStatus} />
+              <StepWaitingApproval member={member} onCheckStatus={handleCheckStatus} />
             ) : member.status === UserStatus.APPROVED ? (
               <StepForm onSubmit={handleSubmitForm} initialData={member} />
             ) : member.status === UserStatus.REGISTERED ? (
@@ -621,7 +623,7 @@ const App = () => {
                     </p>
                     <div className="flex gap-4 mt-1 text-sm text-slate-600">
                       <span>
-                        Size: <strong>{member.shirtSize}</strong>
+                        Size: <strong>{member.shirtSize === "-" || member.paymentMethod === "MEMBER_LAMA" || member.paymentMethod === "KLAIM_MEMBER_LAMA" ? "Tidak Dapat Kaos" : member.shirtSize}</strong>
                       </span>
                       <span>
                         Gender: <strong>{member.gender}</strong>
@@ -640,7 +642,7 @@ const App = () => {
                       </p>
                       <div className="flex gap-4 mt-1 text-sm text-slate-600">
                         <span>
-                          Size: <strong>{member.shirtSize2}</strong>
+                          Size: <strong>{member.shirtSize2 === "-" || member.paymentMethod === "MEMBER_LAMA" || member.paymentMethod === "KLAIM_MEMBER_LAMA" ? "Tidak Dapat Kaos" : member.shirtSize2}</strong>
                         </span>
                         <span>
                           Gender: <strong>{member.gender2}</strong>

@@ -14,7 +14,7 @@ export enum ShirtSize {
   XL = "XL",
 }
 
-export type PaymentMethod = "TRANSFER" | "CASH";
+export type PaymentMethod = "TRANSFER" | "CASH" | "MEMBER_LAMA" | "KLAIM_MEMBER_LAMA";
 
 export interface MemberData {
   whatsapp: string;

@@ -96,11 +96,11 @@ const callScript = async (action: string, payload: any = {}) => {
 // SERVICE METHODS
 // ============================================================================
 
-export const checkMemberStatus = async (whatsapp: string, nickname?: string, childCount: number = 1): Promise<MemberData> => {
+export const checkMemberStatus = async (whatsapp: string, nickname?: string, childCount: number = 1, isOldMemberClaimed: boolean = false): Promise<MemberData> => {
   // 1. REAL MODE
   if (getActiveUrl()) {
     try {
-      return await callScript('check_status', { whatsapp, nickname, childCount });
+      return await callScript('check_status', { whatsapp, nickname, childCount, isOldMemberClaimed });
     } catch (e) {
       console.warn("API Error, falling back to mock check for safety", e);
       throw e;
@@ -136,9 +136,10 @@ export const checkMemberStatus = async (whatsapp: string, nickname?: string, chi
     whatsapp,
     nickname: nickname || '',
     childCount: childCount,
-    status: UserStatus.NEW,
-    paymentCode: randomDigits,
-    paymentAmount: basePrice + randomDigits
+    status: isOldMemberClaimed ? UserStatus.WAITING_APPROVAL : UserStatus.NEW,
+    paymentCode: isOldMemberClaimed ? 0 : randomDigits,
+    paymentAmount: isOldMemberClaimed ? 0 : (basePrice + randomDigits),
+    paymentMethod: isOldMemberClaimed ? "KLAIM_MEMBER_LAMA" : undefined
   };
   
   db[whatsapp] = newMember;

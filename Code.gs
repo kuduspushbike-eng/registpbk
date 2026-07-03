@@ -1,6 +1,6 @@
 // --- COPY KODE INI KE GOOGLE APPS SCRIPT ---
 // Cara: Extensions > Apps Script > Paste > Deploy as Web App (Access: Anyone)
-// Versi: v13 (Fix member lama check bug)
+// Versi: v14 (Opsi Klaim Member Lama)
 
 var FIELD_MAPPING = [
   { key: "timestamp", label: "Waktu Input", aliases: ["Timestamp", "Waktu"] },
@@ -199,10 +199,12 @@ function handleCheckStatus(sheet, colMap, params) {
   var wa = params.whatsapp;
   var nickname = params.nickname || "";
   var childCount = Number(params.childCount) || 1;
-  var rowIndex = findRowIndex(sheet, colMap, wa);
+  var isOldMemberClaimed = params.isOldMemberClaimed || false;
   
+  var rowIndex = findRowIndex(sheet, colMap, wa);
+
   if (rowIndex == -1) {
-        var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
     var oldSheet = ss.getSheetByName("MemberData");
     if (!oldSheet) {
       var sheets = ss.getSheets();
@@ -264,6 +266,12 @@ function handleCheckStatus(sheet, colMap, params) {
       sheet.getRange(newRowIdx, colMap['paymentCode']).setValue(0);
       sheet.getRange(newRowIdx, colMap['paymentMethod']).setValue("MEMBER_LAMA");
       updateRowColor(sheet, newRowIdx, "APPROVED");
+    } else if (isOldMemberClaimed) {
+      sheet.getRange(newRowIdx, colMap['status']).setValue("WAITING_APPROVAL");
+      sheet.getRange(newRowIdx, colMap['paymentAmount']).setValue(0);
+      sheet.getRange(newRowIdx, colMap['paymentCode']).setValue(0);
+      sheet.getRange(newRowIdx, colMap['paymentMethod']).setValue("KLAIM_MEMBER_LAMA");
+      updateRowColor(sheet, newRowIdx, "WAITING_APPROVAL");
     } else {
       var randomCode = Math.floor(Math.random() * 90 + 10);
       var basePrice = childCount == 2 ? 200000 : 100000;
@@ -275,51 +283,40 @@ function handleCheckStatus(sheet, colMap, params) {
     }
     
     return getMemberAtRow(sheet, colMap, newRowIdx);
-  } else {
-    var m = getMemberAtRow(sheet, colMap, rowIndex);
-    
-    if (m.status === 'NEW') {
-       var currentCount = Number(m.childCount) || 1;
-       if (currentCount !== childCount) {
-          var basePrice = childCount == 2 ? 200000 : 100000;
-          var code = m.paymentCode || Math.floor(Math.random() * 90 + 10); 
-          var newAmount = basePrice + code;
-          
-          sheet.getRange(rowIndex, colMap['childCount']).setValue(childCount);
-          sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(newAmount);
-          sheet.getRange(rowIndex, colMap['paymentCode']).setValue(code);
-           
-          m.childCount = childCount;
-          m.paymentAmount = newAmount;
-          m.paymentCode = code;
-       }
-       if (nickname && m.nickname !== nickname) {
-          sheet.getRange(rowIndex, colMap['nickname']).setValue(nickname);
-          m.nickname = nickname;
-       }
-    }
-    
-    return m;
   }
-}
 
-function handleConfirmPayment(sheet, colMap, params) {
-  var rowIndex = findRowIndex(sheet, colMap, params.whatsapp);
-  if (rowIndex == -1) throw "Member not found";
-  
-  sheet.getRange(rowIndex, colMap['status']).setValue("WAITING_APPROVAL");
-  sheet.getRange(rowIndex, colMap['paymentMethod']).setValue(params.method);
-  
-  if (params.method === "CASH") {
-     var currentChildCount = sheet.getRange(rowIndex, colMap['childCount']).getValue() || 1;
-     var basePrice = currentChildCount == 2 ? 200000 : 100000;
-     sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(basePrice);
+  var member = getMemberAtRow(sheet, colMap, rowIndex);
+  if (member.status === "NEW") {
+     var currentChildCount = Number(member.childCount) || 1;
+     var needsUpdate = false;
+     var newBasePrice = childCount == 2 ? 200000 : 100000;
+     var randomCode = member.paymentCode || Math.floor(Math.random() * 90 + 10);
+     
+     if (currentChildCount !== childCount) {
+       sheet.getRange(rowIndex, colMap['childCount']).setValue(childCount);
+       sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(newBasePrice + randomCode);
+       sheet.getRange(rowIndex, colMap['paymentCode']).setValue(randomCode);
+       needsUpdate = true;
+     }
+     if (nickname && member.nickname !== nickname) {
+       sheet.getRange(rowIndex, colMap['nickname']).setValue(nickname);
+       needsUpdate = true;
+     }
+     
+     if (isOldMemberClaimed) {
+       sheet.getRange(rowIndex, colMap['status']).setValue("WAITING_APPROVAL");
+       sheet.getRange(rowIndex, colMap['paymentAmount']).setValue(0);
+       sheet.getRange(rowIndex, colMap['paymentCode']).setValue(0);
+       sheet.getRange(rowIndex, colMap['paymentMethod']).setValue("KLAIM_MEMBER_LAMA");
+       updateRowColor(sheet, rowIndex, "WAITING_APPROVAL");
+       needsUpdate = true;
+     }
+     
+     if (needsUpdate) {
+       return getMemberAtRow(sheet, colMap, rowIndex);
+     }
   }
-  
-  // Set Color for WAITING_APPROVAL
-  updateRowColor(sheet, rowIndex, "WAITING_APPROVAL");
-  
-  return getMemberAtRow(sheet, colMap, rowIndex);
+  return member;
 }
 
 function handleAdminApprove(sheet, colMap, params) {

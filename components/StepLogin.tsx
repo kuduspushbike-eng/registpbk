@@ -7,12 +7,13 @@ const StepLogin = ({
   onLogin,
   logoUrl,
 }: {
-  onLogin: (wa: string, nickname: string, childCount: number) => void;
+  onLogin: (wa: string, nickname: string, childCount: number, isOldMemberClaimed: boolean) => void;
   logoUrl: string;
 }) => {
   const [phone, setPhone] = useState("");
   const [nickname, setNickname] = useState("");
   const [childCount, setChildCount] = useState<number>(1);
+  const [isOldMemberClaimed, setIsOldMemberClaimed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [timeLeft, setTimeLeft] = useState<{
@@ -96,7 +97,7 @@ const StepLogin = ({
       }
     }
     try {
-      await onLogin(cleanNumber, cleanNick, childCount);
+      await onLogin(cleanNumber, cleanNick, childCount, isOldMemberClaimed);
     } catch (e) {
       console.error(e);
     } finally {
@@ -262,6 +263,32 @@ const StepLogin = ({
         </div>
       )}
 
+            {/* MEMBER TYPE SELECTOR */}
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-slate-700">Status Member</label>
+        <div className="bg-white p-1 rounded-xl border border-slate-200 flex shadow-sm">
+          <button
+            type="button"
+            onClick={() => setIsOldMemberClaimed(false)}
+            className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all ${!isOldMemberClaimed ? "bg-slate-800 text-white shadow" : "text-slate-500 hover:bg-slate-50"}`}
+          >
+            MEMBER BARU
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsOldMemberClaimed(true)}
+            className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all ${isOldMemberClaimed ? "bg-emerald-600 text-white shadow" : "text-slate-500 hover:bg-slate-50"}`}
+          >
+            MEMBER LAMA
+          </button>
+        </div>
+        {isOldMemberClaimed && (
+          <p className="text-xs text-emerald-600 px-1">
+            *Member lama tidak dikenakan biaya pendaftaran ulang.
+          </p>
+        )}
+      </div>
+      
       {/* CHILD COUNT SELECTOR */}
       <div className="bg-white p-1 rounded-xl border border-slate-200 flex shadow-sm">
         <button
@@ -269,14 +296,14 @@ const StepLogin = ({
           onClick={() => setChildCount(1)}
           className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all ${childCount === 1 ? "bg-orange-500 text-white shadow" : "text-slate-500 hover:bg-slate-50"}`}
         >
-          1 RIDER (Rp 100rb)
+          {isOldMemberClaimed ? "1 RIDER (Gratis)" : "1 RIDER (Rp 100rb)"}
         </button>
         <button
           type="button"
           onClick={() => setChildCount(2)}
           className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all ${childCount === 2 ? "bg-purple-600 text-white shadow" : "text-slate-500 hover:bg-slate-50"}`}
         >
-          2 RIDER (Rp 200rb)
+          {isOldMemberClaimed ? "2 RIDER (Gratis)" : "2 RIDER (Rp 200rb)"}
         </button>
       </div>
 

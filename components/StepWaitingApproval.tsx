@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { MemberData } from "../types";
 
 const StepWaitingApproval = ({
+  member,
   onCheckStatus,
 }: {
+  member: MemberData;
   onCheckStatus: () => void;
 }) => {
   return (
@@ -29,7 +31,9 @@ const StepWaitingApproval = ({
           Menunggu Verifikasi
         </h2>
         <p className="text-slate-500 text-sm mt-2 max-w-xs mx-auto">
-          Mohon tunggu sebentar, Admin sedang memverifikasi pembayaran Anda.
+          {member.paymentMethod === "KLAIM_MEMBER_LAMA" 
+  ? "Admin sedang memverifikasi klaim Member Lama Anda. Mohon ditunggu." 
+  : "Mohon tunggu sebentar, Admin sedang memverifikasi pembayaran Anda."}
         </p>
       </div>
       <button

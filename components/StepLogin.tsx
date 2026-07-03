@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { APP_STATUS, DEADLINE, CLOSING_IMAGE_URL } from "../config";
-import { calculateTimeLeft } from "../utils";
+import { calculateTimeLeft, sanitizePhoneNumber } from "../utils";
 import * as SheetService from "../services/sheetService";
 
 const StepLogin = ({
@@ -62,7 +62,7 @@ const StepLogin = ({
     // --- LOGIKA BARU BERDASARKAN APP_STATUS ---
 
     // Jika Status CLOSED, blokir semua. (Seharusnya form tidak muncul, tapi untuk keamanan)
-    if (APP_STATUS === "CLOSED") {
+    if ((APP_STATUS as string) === "CLOSED") {
       alert("Pendaftaran sudah ditutup total.");
       setLoading(false);
       return;
@@ -70,7 +70,7 @@ const StepLogin = ({
 
     // Jika Status LATE_ACCESS (Susulan) ATAU jika OPEN tapi sudah lewat deadline
     const isLateMode =
-      APP_STATUS === "LATE_ACCESS" || (APP_STATUS === "OPEN" && !timeLeft);
+      (APP_STATUS as string) === "LATE_ACCESS" || (APP_STATUS === "OPEN" && !timeLeft);
 
     if (isLateMode) {
       try {
@@ -105,7 +105,7 @@ const StepLogin = ({
   };
 
   // TAMPILAN JIKA CLOSED TOTAL
-  if (APP_STATUS === "CLOSED") {
+  if ((APP_STATUS as string) === "CLOSED") {
     return (
       <div className="animate-fade-in text-center py-12 space-y-6">
         <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-slate-200">

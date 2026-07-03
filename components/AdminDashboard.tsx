@@ -4,7 +4,14 @@ import * as SheetService from "../services/sheetService";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
-import { ENABLE_RACE_KOLEKTIF } from "../config";
+import { ENABLE_RACE_KOLEKTIF, DEFAULT_APP_LOGO } from "../config";
+
+import { UserStatus } from "../types";
+import { sanitizePhoneNumber } from "../utils";
+import { FIXED_SCRIPT_URL } from "../config";
+import { IntegrationGuideModal } from "./IntegrationGuideModal";
+import QRCode from "react-qr-code";
+
 
 const AdminDashboard = ({ onConfigUpdate }: { onConfigUpdate: () => void }) => {
   const [members, setMembers] = useState<MemberData[]>([]);

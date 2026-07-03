@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MemberData } from "../types";
+import { MemberData, PaymentMethod } from "../types";
 import { BANK_INFO } from "../config";
 
 const StepPayment = ({

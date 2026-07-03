@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { MemberData, ShirtSize, BIRTH_YEARS } from "../types";
 import { SIZE_CHART_URL, MONTHS } from "../config";
+import { SizeChartModal } from "./SizeChartModal";
 
 const StepForm = ({
   onSubmit,

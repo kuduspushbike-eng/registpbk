@@ -55,22 +55,36 @@ const callScript = async (action: string, payload: any = {}) => {
   if (!url) throw new Error("Script URL not configured");
   
   let response;
+  let timeoutId;
   try {
+    const controller = new AbortController();
+    timeoutId = setTimeout(() => controller.abort(), 15000);
+    
     response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "text/plain;charset=utf-8",
       },
-      body: JSON.stringify({ action, ...payload })
+      body: JSON.stringify({ action, ...payload }),
+      signal: controller.signal
     });
-  } catch(err) {
+  } catch(err: any) {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error("Koneksi timeout. Server Google Script terlalu lambat merespon.");
+    }
     throw new Error("Gagal melakukan request. Periksa koneksi internet Anda.");
   }
   
   let json;
   try {
     json = await response.json();
-  } catch(err) {
+    clearTimeout(timeoutId);
+  } catch(err: any) {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error("Koneksi timeout saat membaca data dari server.");
+    }
     throw new Error("Gagal memproses respon dari Google Script. Pastikan URL Script benar dan di-deploy dengan akses 'Anyone'.");
   }
   
